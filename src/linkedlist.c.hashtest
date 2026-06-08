@@ -1,0 +1,256 @@
+#define _POSIX_C_SOURCE 200809L
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "dll.h"
+#include "hash.h"
+
+__attribute__((unused)) static int cmp_str(const void *p_a, const void *p_b)
+{
+    return strcmp((const char *)p_a, (const char *)p_b);
+}
+
+size_t hash_func(const void *p_key)
+{
+    const char *p_num = (const char *)p_key;
+    return (size_t)(*p_num);
+}
+
+int cmp_func(const void *p_key1, const void *p_key2)
+{
+    const char *p_num1 = (const char *)p_key1;
+    const char *p_num2 = (const char *)p_key2;
+
+    if (*p_num1 == *p_num2)
+    {
+        return 0;
+    }
+    return 1;
+}
+
+static void test_create_destroy(void)
+{
+    printf("--- test_create_destroy ---\n");
+
+    // create and immediately destroy
+    hashtable_t *p_ht = hashtable_create(1, NULL, NULL);
+    assert(NULL != p_ht);
+    assert(0 == hashtable_size(p_ht));
+    hashtable_destroy(&p_ht, NULL, NULL);
+    assert(NULL == p_ht);
+
+    // destroy with NULL del_func on populated list (no free, just smoke test)
+    p_ht = hashtable_create(10, hash_func, cmp_func);
+
+    hashtable_insert(p_ht, strdup("a"), strdup("a"));
+
+    hashtable_insert(p_ht, strdup("b"), strdup("b"));
+    hashtable_insert(p_ht, strdup("c"), strdup("c"));
+    hashtable_destroy(&p_ht, NULL, NULL);
+    assert(NULL == p_ht);
+
+    // double destroy should be a no-op
+    hashtable_destroy(&p_ht, NULL, NULL);
+    assert(NULL == p_ht);
+
+    printf("PASS\n");
+}
+
+static void test_insert_remove_head(void)
+{
+    printf("--- test_insert_remove_head ---\n");
+
+    dll_t *p_dll = dll_create();
+
+    // single element: head and tail should be same
+    dll_insert_head(p_dll, strdup("only"));
+    assert(1 == dll_size(p_dll));
+
+    char *p_val = dll_remove_head(p_dll);
+    assert(0 == strcmp(p_val, "only"));
+    assert(0 == dll_size(p_dll));
+    free(p_val);
+
+    // removing from empty list
+    assert(NULL == dll_remove_head(p_dll));
+
+    // insert multiple at head, verify order
+    dll_insert_head(p_dll, strdup("c"));
+    dll_insert_head(p_dll, strdup("b"));
+    dll_insert_head(p_dll, strdup("a"));
+
+    p_val = dll_remove_head(p_dll);
+    assert(0 == strcmp(p_val, "a"));
+    free(p_val);
+
+    dll_destroy(&p_dll, free);
+    printf("PASS\n");
+}
+
+static void test_insert_remove_tail(void)
+{
+    printf("--- test_insert_remove_tail ---\n");
+
+    dll_t *p_dll = dll_create();
+
+    dll_insert_tail(p_dll, strdup("a"));
+    dll_insert_tail(p_dll, strdup("b"));
+    dll_insert_tail(p_dll, strdup("c"));
+    assert(3 == dll_size(p_dll));
+
+    // remove tail
+    char *p_val = dll_remove_tail(p_dll);
+    assert(0 == strcmp(p_val, "c"));
+    assert(2 == dll_size(p_dll));
+    free(p_val);
+
+    // remove new tail
+    p_val = dll_remove_tail(p_dll);
+    assert(0 == strcmp(p_val, "b"));
+    assert(1 == dll_size(p_dll));
+    free(p_val);
+
+    dll_destroy(&p_dll, free);
+    printf("PASS\n");
+}
+
+static void test_size(void)
+{
+    printf("--- test_size ---\n");
+
+    assert(-1 == dll_size(NULL));
+
+    dll_t *p_dll = dll_create();
+    assert(0 == dll_size(p_dll));
+
+    dll_insert_tail(p_dll, strdup("a"));
+    assert(1 == dll_size(p_dll));
+
+    dll_insert_head(p_dll, strdup("b"));
+    assert(2 == dll_size(p_dll));
+
+    char *p_val = dll_remove_head(p_dll);
+    free(p_val);
+    assert(1 == dll_size(p_dll));
+
+    dll_destroy(&p_dll, free);
+    printf("PASS\n");
+}
+
+static void iter_test(void)
+{
+    printf("--- iter_test ---\n");
+
+    dll_t *p_dll = dll_create();
+
+    dll_insert_tail(p_dll, strdup("a"));
+    dll_insert_head(p_dll, strdup("b"));
+
+    dll_iter_t *p_iter = dll_iter_create(NULL);
+    assert(NULL == p_iter);
+
+    p_iter = dll_iter_create(&p_dll);
+
+    char *p_data = dll_iter_data(p_iter);
+    assert('b' == *p_data);
+    p_data = dll_iter_next(p_iter);
+    assert('a' == *p_data);
+    p_data = dll_iter_next(p_iter);
+    assert(NULL == p_data);
+    p_data = dll_iter_next(p_iter);
+    assert(NULL == p_data);
+
+    p_data = dll_iter_data(p_iter);
+    assert('a' == *p_data);
+    p_data = dll_iter_prev(p_iter);
+    assert('b' == *p_data);
+    p_data = dll_iter_prev(p_iter);
+    assert(NULL == p_data);
+    p_data = dll_iter_data(p_iter);
+    assert('b' == *p_data);
+
+    dll_destroy(&p_dll, free);
+    p_data = dll_iter_data(p_iter);
+    assert(NULL == p_data);
+
+    dll_iter_destroy(&p_iter);
+    assert(NULL == p_iter);
+
+    printf("PASS\n");
+}
+
+// #include <stdio.h>
+// void dll_test(dll_t *p_dll)
+// {
+//     if (NULL != p_dll)
+//     {
+//         printf("previous\tcurrent\t\tnext\tdata\n");
+//         node_t *p_position = p_dll->p_head;
+//         while (NULL != p_position)
+//         {
+//             printf("%p%s\t%p\t%p\t%i\n", (void *)p_position->p_previous, (NULL == p_position->p_previous) ? "\t" :
+//             "",
+//                    (void *)p_position, (void *)p_position->p_next, *(int *)p_position->p_data);
+//             p_position = p_position->p_next;
+//         }
+//         printf("\n");
+//     }
+// }
+
+static void final_test(void)
+{
+    printf("--- final_test ---\n");
+    dll_t *p_dll = dll_create();
+
+    int test1 = 1;
+    dll_insert_tail(p_dll, &test1);
+    int test2 = 2;
+    dll_insert_tail(p_dll, &test2);
+    int test3 = 3;
+    dll_insert_head(p_dll, &test3);
+    int test4 = 4;
+    dll_insert_head(p_dll, &test4);
+
+    dll_remove_head(p_dll);
+    dll_remove_tail(p_dll);
+
+    int test5 = 5;
+    dll_insert_tail(p_dll, &test5);
+    int test6 = 6;
+    dll_insert_head(p_dll, &test6);
+
+    dll_remove_head(p_dll);
+    dll_remove_tail(p_dll);
+
+    int test7 = 7;
+    dll_insert_tail(p_dll, &test7);
+    int test8 = 8;
+    dll_insert_head(p_dll, &test8);
+
+    dll_remove_head(p_dll);
+    dll_remove_tail(p_dll);
+
+    int test9 = 9;
+    dll_insert_tail(p_dll, &test9);
+    int test0 = 0;
+    dll_insert_head(p_dll, &test0);
+
+    dll_destroy(&p_dll, NULL);
+
+    printf("PASS\n");
+}
+
+int main(void)
+{
+    test_create_destroy();
+    test_insert_remove_head();
+    test_insert_remove_tail();
+    test_size();
+    iter_test();
+    final_test();
+
+    printf("\nAll tests passed.\n");
+    return 0;
+}

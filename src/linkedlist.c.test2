@@ -1,0 +1,43 @@
+#include "llist.h"
+#include "task.h"
+#include <stdio.h>
+
+int main(void)
+{
+    llist_t *tasks = llist_create();
+
+    // Add tasks (like a queue)
+    llist_insert_tail(tasks, task_create(1, "Write report", 2));
+    llist_insert_tail(tasks, task_create(2, "Fix bug", 5));
+    llist_insert_tail(tasks, task_create(3, "Email team", 1));
+
+    printf("Initial tasks:\n");
+    llist_iterate(tasks, task_print);
+
+    // Insert urgent task at head (priority override)
+    llist_insert_head(tasks, task_create(99, "HOTFIX", 10));
+
+    printf("\nAfter urgent insert:\n");
+    llist_iterate(tasks, task_print);
+
+    // Find task index by ID
+    int search_id = 2;
+    int index = llist_index_of(tasks, &search_id, task_compare);
+    printf("\nTask ID 2 is at index: %d\n", index);
+
+    // Remove completed task
+    task_t *done = llist_remove_at(tasks, index);
+    if (done)
+    {
+        printf("Completed: %s\n", done->name);
+        task_destroy(done);
+    }
+
+    printf("\nRemaining tasks:\n");
+    llist_iterate(tasks, task_print);
+
+    // Cleanup everything
+    llist_destroy(&tasks, task_destroy);
+
+    return 0;
+}

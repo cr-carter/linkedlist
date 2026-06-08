@@ -1,0 +1,230 @@
+#define _POSIX_C_SOURCE 200809L
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "llist.h"
+
+__attribute__((unused)) static int cmp_str(const void *p_a, const void *p_b)
+{
+    return strcmp((const char *)p_a, (const char *)p_b);
+}
+
+static void test_create_destroy(void)
+{
+    printf("--- test_create_destroy ---\n");
+
+    // create and immediately destroy
+    llist_t *p_list = llist_create();
+    assert(NULL != p_list);
+    assert(0 == llist_size(p_list));
+    llist_destroy(&p_list, NULL);
+    assert(NULL == p_list);
+
+    // destroy with NULL del_func on populated list (no free, just smoke test)
+    p_list = llist_create();
+    llist_insert_tail(p_list, (char *)"a");
+    llist_insert_tail(p_list, (char *)"b");
+    llist_destroy(&p_list, NULL);
+    assert(NULL == p_list);
+
+    // double destroy should be a no-op
+    llist_destroy(&p_list, NULL);
+    assert(NULL == p_list);
+
+    printf("PASS\n");
+}
+
+static void test_insert_remove_head(void)
+{
+    printf("--- test_insert_remove_head ---\n");
+
+    llist_t *p_list = llist_create();
+
+    // single element: head and tail should be same
+    llist_insert_head(p_list, strdup("only"));
+    assert(1 == llist_size(p_list));
+
+    char *p_val = llist_remove_at(p_list, 0);
+    assert(0 == strcmp(p_val, "only"));
+    assert(0 == llist_size(p_list));
+    free(p_val);
+
+    // removing from empty list
+    assert(NULL == llist_remove_at(p_list, 0));
+
+    // insert multiple at head, verify order
+    llist_insert_head(p_list, strdup("c"));
+    llist_insert_head(p_list, strdup("b"));
+    llist_insert_head(p_list, strdup("a"));
+
+    p_val = llist_remove_at(p_list, 0);
+    assert(0 == strcmp(p_val, "a"));
+    free(p_val);
+
+    llist_destroy(&p_list, free);
+    printf("PASS\n");
+}
+
+static void test_insert_remove_tail(void)
+{
+    printf("--- test_insert_remove_tail ---\n");
+
+    llist_t *p_list = llist_create();
+
+    llist_insert_tail(p_list, strdup("a"));
+    llist_insert_tail(p_list, strdup("b"));
+    llist_insert_tail(p_list, strdup("c"));
+    assert(3 == llist_size(p_list));
+
+    // remove tail
+    char *p_val = llist_remove_at(p_list, 2);
+    assert(0 == strcmp(p_val, "c"));
+    assert(2 == llist_size(p_list));
+    free(p_val);
+
+    // remove new tail
+    p_val = llist_remove_at(p_list, 1);
+    assert(0 == strcmp(p_val, "b"));
+    assert(1 == llist_size(p_list));
+    free(p_val);
+
+    llist_destroy(&p_list, free);
+    printf("PASS\n");
+}
+
+static void test_insert_at(void)
+{
+    printf("--- test_insert_at ---\n");
+
+    llist_t *p_list = llist_create();
+    llist_insert_tail(p_list, strdup("a"));
+    llist_insert_tail(p_list, strdup("c"));
+
+    // insert in middle
+    llist_insert_at(p_list, strdup("b"), 1);
+    assert(3 == llist_size(p_list));
+
+    char *p_val = llist_remove_at(p_list, 1);
+    assert(0 == strcmp(p_val, "b"));
+    free(p_val);
+
+    // index 0 should behave like insert_head
+    llist_insert_at(p_list, strdup("z"), 0);
+    p_val = llist_remove_at(p_list, 0);
+    assert(0 == strcmp(p_val, "z"));
+    free(p_val);
+
+    // negative index should behave like insert_head
+    llist_insert_at(p_list, strdup("z"), -5);
+    p_val = llist_remove_at(p_list, 0);
+    assert(0 == strcmp(p_val, "z"));
+    free(p_val);
+
+    // over-index should behave like insert_tail
+    llist_insert_at(p_list, strdup("z"), 9999);
+    p_val = llist_remove_at(p_list, llist_size(p_list) - 1);
+    assert(0 == strcmp(p_val, "z"));
+    free(p_val);
+
+    llist_destroy(&p_list, free);
+    printf("PASS\n");
+}
+
+static void test_index_of(void)
+{
+    printf("--- test_index_of ---\n");
+
+    llist_t *p_list = llist_create();
+    llist_insert_tail(p_list, strdup("apple"));
+    llist_insert_tail(p_list, strdup("banana"));
+    llist_insert_tail(p_list, strdup("cherry"));
+
+    assert(0 == llist_index_of(p_list, "apple", cmp_str));
+    assert(1 == llist_index_of(p_list, "banana", cmp_str));
+    assert(2 == llist_index_of(p_list, "cherry", cmp_str));
+
+    // not found
+    assert(-1 == llist_index_of(p_list, "durian", cmp_str));
+
+    // NULL guards
+    assert(-1 == llist_index_of(NULL, "apple", cmp_str));
+    assert(-1 == llist_index_of(p_list, NULL, cmp_str));
+    assert(-1 == llist_index_of(p_list, "apple", NULL));
+
+    llist_destroy(&p_list, free);
+    printf("PASS\n");
+}
+
+static void test_remove_at_boundaries(void)
+{
+    printf("--- test_remove_at_boundaries ---\n");
+
+    llist_t *p_list = llist_create();
+
+    // out of bounds on empty list
+    assert(NULL == llist_remove_at(p_list, 0));
+    assert(NULL == llist_remove_at(p_list, -1));
+
+    llist_insert_tail(p_list, strdup("a"));
+    llist_insert_tail(p_list, strdup("b"));
+    llist_insert_tail(p_list, strdup("c"));
+
+    // out of bounds high
+    assert(NULL == llist_remove_at(p_list, 3));
+    assert(NULL == llist_remove_at(p_list, 99));
+
+    // out of bounds low
+    assert(NULL == llist_remove_at(p_list, -1));
+
+    // remove middle, then verify tail is still intact
+    char *p_val = llist_remove_at(p_list, 1);
+    assert(0 == strcmp(p_val, "b"));
+    free(p_val);
+
+    // tail should still be "c"
+    p_val = llist_remove_at(p_list, llist_size(p_list) - 1);
+    assert(0 == strcmp(p_val, "c"));
+    free(p_val);
+
+    llist_destroy(&p_list, free);
+    printf("PASS\n");
+}
+
+static void test_size(void)
+{
+    printf("--- test_size ---\n");
+
+    assert(-1 == llist_size(NULL));
+
+    llist_t *p_list = llist_create();
+    assert(0 == llist_size(p_list));
+
+    llist_insert_tail(p_list, strdup("a"));
+    assert(1 == llist_size(p_list));
+
+    llist_insert_head(p_list, strdup("b"));
+    assert(2 == llist_size(p_list));
+
+    char *p_val = llist_remove_at(p_list, 0);
+    free(p_val);
+    assert(1 == llist_size(p_list));
+
+    llist_destroy(&p_list, free);
+    printf("PASS\n");
+}
+
+int main(void)
+{
+    test_create_destroy();
+    test_insert_remove_head();
+    test_insert_remove_tail();
+    test_insert_at();
+    test_index_of();
+    test_remove_at_boundaries();
+    test_size();
+
+    printf("\nAll tests passed.\n");
+    return 0;
+}
