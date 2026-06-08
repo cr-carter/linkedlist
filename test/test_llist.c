@@ -4,13 +4,24 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
-void test_llist_create_node_good(void)
+/* Functions to test
+
+void *llist_remove_at(llist_t *p_list, int index);
+
+int llist_size(llist_t *p_list);
+
+void llist_iterate(llist_t *p_list, llist_iter_f iter_f);
+
+*/
+
+void test_llist_create(void)
 {
-    printf("\nTesting llist_create_node with good values...\n");
-    node_t *p_temp = llist_create_node(0);
+    printf("\nTesting llist_create...\n");
+    llist_t *p_list = llist_create();
 
-    if ((NULL != p_temp) && (0 == p_temp->value) && (NULL == p_temp->p_next))
+    if ((NULL != p_list))
     {
         TEST_PASS();
     }
@@ -18,10 +29,16 @@ void test_llist_create_node_good(void)
     {
         TEST_FAIL();
     }
+}
 
-    p_temp = llist_create_node(-1);
+void test_llist_destroy(void)
+{
+    printf("\nTesting llist_destroy...\n");
+    llist_t *p_list = llist_create();
 
-    if ((NULL != p_temp) && (-1 == p_temp->value) && (NULL == p_temp->p_next))
+    llist_destroy(&p_list, NULL);
+
+    if (NULL == p_list)
     {
         TEST_PASS();
     }
@@ -34,13 +51,30 @@ void test_llist_create_node_good(void)
 void test_llist_insert_head_good(void)
 {
     printf("\nTesting llist_insert_head with good values...\n");
-    node_t *p_head = llist_create_node(0);
-    node_t *p_new_head = llist_create_node(1);
-    node_t *p_check = p_head;
+    llist_t *p_list = llist_create();
+    int test_data8 = 8;
+    int test_data6 = 6;
+    // int test_data7 = 7;
+    // int test_data5 = 5;
+    // int test_data3 = 3;
+    // int test_data0 = 0;
+    // int test_data9 = 9;
 
-    int test_val = llist_insert_head(&p_head, p_new_head);
+    int test_val = llist_insert_head(p_list, &test_data8);
+    int *return_data = llist_remove_at(p_list, 0);
 
-    if ((1 == test_val) && (p_check == p_new_head->p_next))
+    if ((1 == test_val) && (8 == *return_data))
+    {
+    }
+    else
+    {
+        TEST_FAIL();
+    }
+
+    test_val = llist_insert_head(p_list, &test_data6);
+    return_data = llist_remove_at(p_list, 0);
+
+    if ((1 == test_val) && (6 == *return_data))
     {
         TEST_PASS();
     }
@@ -53,14 +87,10 @@ void test_llist_insert_head_good(void)
 void test_llist_insert_head_bad(void)
 {
     printf("\nTesting llist_insert_head with bad values...\n");
-    node_t *p_head = llist_create_node(0);
-    node_t *p_new_head = llist_create_node(1);
 
-    int test_val1 = llist_insert_head(NULL, p_new_head);
-    int test_val2 = llist_insert_head(&p_head, NULL);
-    int test_val3 = llist_insert_head(NULL, NULL);
+    int test_val = llist_insert_head(NULL, NULL);
 
-    if ((0 == test_val1) && (0 == test_val2) && (0 == test_val3))
+    if (-1 == test_val)
     {
         TEST_PASS();
     }
@@ -73,12 +103,32 @@ void test_llist_insert_head_bad(void)
 void test_llist_insert_tail_good(void)
 {
     printf("\nTesting llist_insert_tail with good values...\n");
-    node_t *p_head = llist_create_node(0);
-    node_t *p_new_tail = llist_create_node(1);
+    llist_t *p_list = llist_create();
+    int test_data8 = 8;
+    int test_data6 = 6;
+    int test_data7 = 7;
+    int test_data5 = 5;
+    // int test_data3 = 3;
+    // int test_data0 = 0;
+    // int test_data9 = 9;
 
-    int test_val = llist_insert_tail(p_head, p_new_tail);
+    llist_insert_tail(p_list, &test_data7);
+    int test_val = llist_insert_tail(p_list, &test_data8);
+    int *return_data = llist_remove_at(p_list, 1);
 
-    if ((1 == test_val) && (p_new_tail == p_head->p_next))
+    if ((1 == test_val) && (8 == *return_data))
+    {
+    }
+    else
+    {
+        TEST_FAIL();
+    }
+
+    llist_insert_tail(p_list, &test_data5);
+    test_val = llist_insert_tail(p_list, &test_data6);
+    return_data = llist_remove_at(p_list, 2);
+
+    if ((1 == test_val) && (6 == *return_data))
     {
         TEST_PASS();
     }
@@ -91,14 +141,10 @@ void test_llist_insert_tail_good(void)
 void test_llist_insert_tail_bad(void)
 {
     printf("\nTesting llist_insert_tail with bad values...\n");
-    node_t *p_head = llist_create_node(0);
-    node_t *p_new_head = llist_create_node(1);
 
-    int test_val1 = llist_insert_tail(NULL, p_new_head);
-    int test_val2 = llist_insert_tail(p_head, NULL);
-    int test_val3 = llist_insert_tail(NULL, NULL);
+    int test_val = llist_insert_tail(NULL, NULL);
 
-    if ((0 == test_val1) && (0 == test_val2) && (0 == test_val3))
+    if (-1 == test_val)
     {
         TEST_PASS();
     }
@@ -108,17 +154,37 @@ void test_llist_insert_tail_bad(void)
     }
 }
 
-void test_llist_insert_after_good(void)
+void test_llist_insert_at_good(void)
 {
     printf("\nTesting llist_insert_after with good values...\n");
-    node_t *p_head = llist_create_node(0);
-    node_t *p_tail = llist_create_node(2);
-    node_t *p_insert = llist_create_node(1);
+    llist_t *p_list = llist_create();
+    int test_data8 = 8;
+    int test_data6 = 6;
+    int test_data7 = 7;
+    int test_data5 = 5;
+    // int test_data3 = 3;
+    // int test_data0 = 0;
+    // int test_data9 = 9;
 
-    llist_insert_tail(p_head, p_tail);
-    int test_val = llist_insert_after(p_head, p_insert, 0);
+    llist_insert_head(p_list, &test_data8);
+    llist_insert_tail(p_list, &test_data6);
+    llist_insert_tail(p_list, &test_data5);
 
-    if ((1 == test_val) && (p_insert == p_head->p_next) && (p_tail == p_insert->p_next))
+    int test_val = llist_insert_at(p_list, &test_data7, 2);
+    int *return_data = llist_remove_at(p_list, 2);
+
+    if ((1 == test_val) && (7 == *return_data))
+    {
+    }
+    else
+    {
+        TEST_FAIL();
+    }
+
+    test_val = llist_insert_at(p_list, &test_data7, 1);
+    return_data = llist_remove_at(p_list, 1);
+
+    if ((1 == test_val) && (7 == *return_data))
     {
         TEST_PASS();
     }
@@ -128,20 +194,12 @@ void test_llist_insert_after_good(void)
     }
 }
 
-void test_llist_insert_after_bad(void)
+void test_llist_insert_at_bad(void)
 {
     printf("\nTesting llist_insert_after with bad values...\n");
-    node_t *p_head = llist_create_node(0);
-    node_t *p_tail = llist_create_node(2);
-    node_t *p_insert = llist_create_node(1);
+    int test_val = llist_insert_at(NULL, NULL, 1);
 
-    llist_insert_tail(p_head, p_tail);
-    int test_val1 = llist_insert_after(NULL, p_insert, 0);
-    int test_val2 = llist_insert_after(p_head, NULL, 0);
-    int test_val3 = llist_insert_after(NULL, NULL, 0);
-    int test_val4 = llist_insert_after(p_head, p_insert, 1);
-
-    if ((0 == test_val1) && (0 == test_val2) && (0 == test_val3) && (0 == test_val4))
+    if (-1 == test_val)
     {
         TEST_PASS();
     }
@@ -151,20 +209,60 @@ void test_llist_insert_after_bad(void)
     }
 }
 
-void test_llist_find_node_good(void)
+__attribute__((unused)) static int cmp_str(const void *p_a, const void *p_b)
+{
+    return strcmp((const char *)p_a, (const char *)p_b);
+}
+
+void test_llist_index_of_good(void)
 {
     printf("\nTesting llist_find_node with good values...\n");
-    node_t *p_head = llist_create_node(0);
-    node_t *p_insert = llist_create_node(1);
-    node_t *p_tail = llist_create_node(2);
 
-    llist_insert_tail(p_head, p_insert);
-    llist_insert_tail(p_head, p_tail);
+    llist_t *p_list = llist_create();
+    char *test_data0 = calloc(1, sizeof(test_data0));
+    char *test_data1 = calloc(1, sizeof(test_data1));
+    char *test_data2 = calloc(1, sizeof(test_data2));
+    char *test_data3 = calloc(1, sizeof(test_data3));
 
-    node_t *p_check1 = llist_find_node(p_head, 1);
-    node_t *p_check2 = llist_find_node(p_head, -1);
+    test_data0 = strcpy(test_data0, "a");
+    test_data1 = strcpy(test_data1, "b");
+    test_data2 = strcpy(test_data2, "c");
+    test_data3 = strcpy(test_data3, "d");
+    // int test_data3 = 3;
+    // int test_data0 = 0;
+    // int test_data9 = 9;
 
-    if ((p_check1 == p_insert) && (NULL == p_check2))
+    llist_insert_head(p_list, test_data0);
+    llist_insert_tail(p_list, test_data1);
+    llist_insert_tail(p_list, test_data2);
+    llist_insert_tail(p_list, test_data3);
+
+    int test_val = llist_index_of(p_list, (char *)"c", cmp_str);
+    char *return_data = llist_remove_at(p_list, test_val);
+
+    if ((2 == test_val) && (0 == strcmp((char *)"c", return_data)))
+    {
+    }
+    else
+    {
+        TEST_FAIL();
+    }
+
+    test_val = llist_index_of(p_list, (char *)"d", cmp_str);
+    return_data = llist_remove_at(p_list, test_val);
+
+    if ((2 == test_val) && (0 == strcmp((char *)"d", return_data)))
+    {
+    }
+    else
+    {
+        TEST_FAIL();
+    }
+
+    test_val = llist_index_of(p_list, (char *)"b", cmp_str);
+    return_data = llist_remove_at(p_list, test_val);
+
+    if ((1 == test_val) && (0 == strcmp((char *)"b", return_data)))
     {
         TEST_PASS();
     }
@@ -174,19 +272,30 @@ void test_llist_find_node_good(void)
     }
 }
 
-void test_llist_find_node_bad(void)
+void test_llist_index_of_bad(void)
 {
     printf("\nTesting llist_find_node with bad values...\n");
-    node_t *p_head = llist_create_node(0);
-    node_t *p_insert = llist_create_node(1);
-    node_t *p_tail = llist_create_node(2);
 
-    llist_insert_tail(p_head, p_insert);
-    llist_insert_tail(p_head, p_tail);
+    int test_val = llist_index_of(NULL, NULL, NULL);
 
-    node_t *p_check1 = llist_find_node(NULL, 1);
+    if (-1 == test_val)
+    {
+    }
+    else
+    {
+        TEST_FAIL();
+    }
 
-    if (p_check1 == NULL)
+    llist_t *p_list = llist_create();
+    char *test_data0 = calloc(1, sizeof(test_data0));
+    char *test_data1 = calloc(1, sizeof(test_data1));
+
+    test_data0 = strcpy(test_data0, "a");
+    test_data1 = strcpy(test_data1, "b");
+
+    test_val = llist_index_of(p_list, (char *)"c", cmp_str);
+
+    if (-1 == test_val)
     {
         TEST_PASS();
     }
@@ -194,54 +303,6 @@ void test_llist_find_node_bad(void)
     {
         TEST_FAIL();
     }
-}
-
-void test_llist_remove_node_good(void)
-{
-    printf("\nTesting llist_remove_node with good values...\n");
-    node_t *p_head = llist_create_node(0);
-    node_t *p_insert = llist_create_node(1);
-    node_t *p_tail = llist_create_node(2);
-
-    llist_insert_tail(p_head, p_insert);
-    llist_insert_tail(p_head, p_tail);
-
-    node_t *p_check1 = llist_remove_node(&p_head, 1);
-    node_t *p_check2 = llist_remove_node(&p_head, -1);
-
-    if ((p_check1 == p_insert) && (NULL == p_check2) && (p_tail == p_head->p_next) && (1 == p_check1->value))
-    {
-        TEST_PASS();
-    }
-    else
-    {
-        TEST_FAIL();
-    }
-}
-
-void test_llist_remove_node_bad(void)
-{
-    printf("\nTesting llist_remove_node with bad values...\n");
-}
-
-void test_llist_delete_node_good(void)
-{
-    printf("\nTesting llist_delete_node with good values...\n");
-}
-
-void test_llist_delete_node_bad(void)
-{
-    printf("\nTesting llist_delete_node with bad values...\n");
-}
-
-void test_llist_size_good(void)
-{
-    printf("\nTesting llist_size with good values...\n");
-}
-
-void test_llist_size_bad(void)
-{
-    printf("\nTesting llist_size with bad values...\n");
 }
 
 /* End of file test_llist.c */

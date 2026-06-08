@@ -128,12 +128,7 @@ int main(void)
             break;
         }
     }
-    printf("Unsorted:\n");
-    for (int idx = 0; idx < arr_len; idx++)
-    {
-        printf("%d     ", *ints[idx]);
-    }
-    puts("");
+
     qsort(ints, (size_t)arr_len, sizeof(*ints), int_qsort);
     dll_insertion_sort(p_dll, int_cmp_dll);
 

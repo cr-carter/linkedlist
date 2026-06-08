@@ -49,7 +49,7 @@ typedef void (*llist_iter_f)(void *);
  *
  * @return Pointer to a new llist_t on success, or NULL on allocation failure.
  */
-llist_t *deque_create(void);
+llist_t *llist_create(void);
 
 /**
  * @brief Insert data at the head of the list. O(1)
