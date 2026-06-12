@@ -37,6 +37,7 @@ struct node
 
 static node_t *static_create_node(void *p_data, node_t *p_parent);
 static node_t *static_create_node(void *p_data, node_t *p_parent);
+static void *static_find_data(compare_fn compare, node_t *p_current, void *p_key);
 
 tree_t *bst_create_tree(compare_fn compare, destroy_fn destroy)
 {
@@ -93,30 +94,32 @@ EXIT_FUNC:
     return retval;
 }
 
-/**
- * @brief Searches the tree for data matching the specified key.
- *
- * Traverses the tree using the tree's comparison function to locate
- * data that matches the provided search key.
- *
- * @param p_tree Pointer to the tree.
- * @param p_key Pointer to the key used for comparison.
- *
- * @return Pointer to the matching stored data, or NULL if no matching
- * data exists in the tree.
- */
-void *bst_find(tree_t *p_tree, void *p_key);
+void *bst_find(tree_t *p_tree, void *p_key)
+{
+    void *retval = NULL;
 
-/**
- * @brief Retrieves the data stored in the root node.
- *
- * Returns the user data associated with the root node of the tree.
- *
- * @param p_tree Pointer to the tree.
- *
- * @return Pointer to the root node's data, or NULL if the tree is empty.
- */
-void *bst_get_root(tree_t *p_tree);
+    if ((NULL == p_tree) || (NULL == p_key) || (NULL == p_tree->p_root))
+    {
+        goto EXIT_FUNC;
+    }
+
+    retval = static_find_data(p_tree->compare, p_tree->p_root, p_key);
+
+EXIT_FUNC:
+    return retval;
+}
+
+void *bst_get_root(tree_t *p_tree)
+{
+    void *retval = NULL;
+
+    if ((NULL != p_tree) && (NULL != p_tree->p_root))
+    {
+        retval = p_tree->p_root->p_data;
+    }
+
+    return retval;
+}
 
 /**
  * @brief Retrieves the minimum value stored in the tree.
@@ -275,6 +278,47 @@ static node_t *static_insert_data(compare_fn compare, node_t *p_current, void *p
         else
         {
             static_insert_data(compare, p_current->p_right, p_data);
+        }
+    }
+
+EXIT_FUNC:
+    return retval;
+}
+
+static void *static_find_data(compare_fn compare, node_t *p_current, void *p_key)
+{
+    void *retval = NULL;
+
+    // Case for key found in p_current
+    if (0 == compare(p_current->p_data, p_key))
+    {
+        retval = p_current->p_data;
+        goto EXIT_FUNC;
+    }
+
+    // Case for key less than current node (look to left)
+    if (0 > compare(p_current->p_data, p_key))
+    {
+        if (NULL == p_current->p_left)
+        {
+            goto EXIT_FUNC;
+        }
+        else
+        {
+            static_find_data(compare, p_current->p_left, p_key);
+        }
+    }
+
+    // Case for key greater than current node (look to right)
+    if (0 < compare(p_current->p_data, p_key))
+    {
+        if (NULL == p_current->p_right)
+        {
+            goto EXIT_FUNC;
+        }
+        else
+        {
+            static_find_data(compare, p_current->p_right, p_key);
         }
     }
 
