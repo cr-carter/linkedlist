@@ -19,23 +19,6 @@
 #include <stdlib.h>
 
 typedef struct tree tree_t;
-typedef struct node node_t;
-
-struct tree
-{
-    node_t *p_root;
-    size_t size;
-    compare_fn compare;
-    destroy_fn destroy;
-};
-
-struct node
-{
-    node_t *p_parent;
-    node_t *p_left;
-    node_t *p_right;
-    void *p_data;
-};
 
 typedef int (*compare_fn)(const void *, const void *);
 typedef void (*destroy_fn)(void *);
