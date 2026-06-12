@@ -38,6 +38,8 @@ struct node
 static node_t *static_create_node(void *p_data, node_t *p_parent);
 static node_t *static_create_node(void *p_data, node_t *p_parent);
 static void *static_find_data(compare_fn compare, node_t *p_current, void *p_key);
+static void *static_min_value(node_t *p_current);
+static void *static_max_value(node_t *p_current);
 
 tree_t *bst_create_tree(compare_fn compare, destroy_fn destroy)
 {
@@ -121,32 +123,41 @@ void *bst_get_root(tree_t *p_tree)
     return retval;
 }
 
-/**
- * @brief Retrieves the minimum value stored in the tree.
- *
- * @param p_tree Pointer to the tree.
- *
- * @return Pointer to the minimum data value, or NULL if the tree is empty.
- */
-void *bst_minimum_value(tree_t *p_tree);
+void *bst_minimum_value(tree_t *p_tree)
+{
+    void *retval = NULL;
 
-/**
- * @brief Retrieves the maximum value stored in the tree.
- *
- * @param p_tree Pointer to the tree.
- *
- * @return Pointer to the maximum data value, or NULL if the tree is empty.
- */
-void *bst_maximum_value(tree_t *p_tree);
+    if ((NULL != p_tree) && (NULL != p_tree->p_root))
+    {
+        retval = static_min_value(p_tree->p_root);
+    }
 
-/**
- * @brief Returns the number of nodes currently stored in the tree.
- *
- * @param p_tree Pointer to the tree.
- *
- * @return Number of nodes in the tree.
- */
-size_t bst_size_of_tree(tree_t *p_tree);
+    return retval;
+}
+
+void *bst_maximum_value(tree_t *p_tree)
+{
+    void *retval = NULL;
+
+    if ((NULL != p_tree) && (NULL != p_tree->p_root))
+    {
+        retval = static_max_value(p_tree->p_root);
+    }
+
+    return retval;
+}
+
+size_t bst_size_of_tree(tree_t *p_tree)
+{
+    size_t retval = 0;
+
+    if (NULL != p_tree)
+    {
+        retval = p_tree->size;
+    }
+
+    return retval;
+}
 
 /**
  * @brief Returns the height of the tree.
@@ -324,6 +335,36 @@ static void *static_find_data(compare_fn compare, node_t *p_current, void *p_key
 
 EXIT_FUNC:
     return retval;
+}
+
+static void *static_min_value(node_t *p_current)
+{
+    void *retval = NULL;
+
+    if (NULL == p_current->p_left)
+    {
+        retval = p_current->p_data;
+    }
+    else
+    {
+        retval = static_min_value(p_current->p_left);
+    }
+
+    return retval;
+}
+
+static void *static_max_value(node_t *p_current)
+{
+    void *retval = NULL;
+
+    if (NULL == p_current->p_right)
+    {
+        retval = p_current->p_data;
+    }
+    else
+    {
+        retval = static_max_value(p_current->p_right);
+    }
 }
 
 /* End of file bst.c */
