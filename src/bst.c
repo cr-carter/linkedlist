@@ -259,7 +259,7 @@ EXIT_FUNC:
 
 void bst_clear(tree_t *p_tree)
 {
-    if (NULL != p_tree)
+    if ((NULL != p_tree) && (NULL != p_tree->p_root))
     {
         static_destroy_all_nodes(p_tree, &(p_tree->p_root));
         p_tree->p_root = NULL;
@@ -468,7 +468,7 @@ static void static_destroy_node(tree_t *p_tree, node_t **pp_delete_me)
 
 static void static_destroy_all_nodes(tree_t *p_tree, node_t **pp_current)
 {
-    if ((NULL != pp_current) && (NULL != p_tree))
+    if ((NULL != pp_current) && (NULL != p_tree) && (NULL != *pp_current))
     {
         if (NULL != (*pp_current)->p_left)
         {
