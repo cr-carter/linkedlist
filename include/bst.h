@@ -18,11 +18,33 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+/**
+ * Structure used to store and interact with the binary search tree.
+ */
 typedef struct tree tree_t;
 
+/**
+ * The comparison function must return:
+ * - A negative value if the first argument is less than the second.
+ * - Zero if the values are equal.
+ * - A positive value if the first argument is greater than the second.
+ */
 typedef int (*compare_fn)(const void *, const void *);
+
+/**
+ * The destroy function will instruct how to destroy data stored in the tree at each node.
+ */
 typedef void (*destroy_fn)(void *);
+
+/**
+ * The print function will instruct how to print the data stored in the tree at each node.
+ */
 typedef void (*print_fn)(const void *);
+
+/**
+ * This is a generic function that can be provided in bst_pre_order(), bst_post_order(), and bst_in_order().
+ */
+typedef void (*order_fn)(const void *);
 
 /**
  * @brief Creates an empty binary search tree.
@@ -41,7 +63,7 @@ typedef void (*print_fn)(const void *);
  *
  * @return Pointer to the newly created tree, or NULL if allocation fails.
  *
- * @note The tree will own and destroy data if @p destroy is provided. If NULL, then the caller continues to own data
+ * @note The tree will destroy data if @p destroy is provided. If NULL, then the caller continues to own data
  * stored in tree and must free data to prevent memory leaks.
  */
 tree_t *bst_create_tree(compare_fn compare, destroy_fn destroy);
@@ -50,17 +72,21 @@ tree_t *bst_create_tree(compare_fn compare, destroy_fn destroy);
  * @brief Inserts data into the binary search tree.
  *
  * Creates a new node containing the specified data and inserts it into
- * the appropriate location according to BST ordering rules.
+ * the appropriate location according to BST ordering rules. Duplicate data is will not be stored in the tree, and the
+ * tree will not take ownership of the data.
  *
  * @param p_tree Pointer to the tree.
  * @param p_data Pointer to user data to insert. The tree will own and free @p p_data
  *
- * @return true if insertion succeeds, false otherwise.
+ * @return true if insertion succeeds, false otherwise. Duplicate data will not be successfully inserted.
  *
  * @note After successful insertion, ownership of @p p_data is transferred
  * to the BST. If a destroy function was supplied when the tree was created,
  * the BST will use it to destroy stored data when nodes are removed or the
  * tree is destroyed.
+ *
+ * If insertion fails due to duplicate data, ownership remains with
+ * the caller and the caller is responsible for freeing p_data.
  */
 bool bst_add_node(tree_t *p_tree, void *p_data);
 
@@ -115,18 +141,6 @@ void *bst_maximum_value(tree_t *p_tree);
  * @return Number of nodes in the tree.
  */
 size_t bst_size_of_tree(tree_t *p_tree);
-
-/**
- * @brief Returns the height of the tree.
- *
- * The height of an empty tree is 0. The height of a tree containing
- * only a root node is 1.
- *
- * @param p_tree Pointer to the tree.
- *
- * @return Height of the tree.
- */
-size_t bst_height(tree_t *p_tree);
 
 /**
  * @brief Determines whether the tree is empty.
@@ -189,7 +203,40 @@ void bst_clear(tree_t *p_tree);
  *
  * @param pp_tree Address of the tree pointer to destroy.
  */
-void bst_delete_tree(tree_t **pp_tree);
+void bst_destroy_tree(tree_t **pp_tree);
+
+/**
+ * @brief Executes a pre-order traversal of the tree.
+ *
+ * Traverses the tree in root-left-right order. This can be used to clone
+ * or serialize the tree structure.
+ *
+ * @param p_tree Pointer to the tree.
+ * @param order_func Function to perform on the data stored in each node of the tree as it is traversed.
+ */
+void bst_pre_order(tree_t *p_tree, order_fn order_func);
+
+/**
+ * @brief Executes a post-order traversal of the tree.
+ *
+ * Traverses the tree in left-right-root order. This is typically used
+ * when deleting nodes or freeing memory from the bottom up.
+ *
+ * @param p_tree Pointer to the tree.
+ * @param order_func Function to perform on the data stored in each node of the tree as it is traversed.
+ */
+void bst_post_order(tree_t *p_tree, order_fn order_func);
+
+/**
+ * @brief Executes an in-order traversal of the tree.
+ *
+ * Traverses the tree in left-root-right order. For a binary search tree,
+ * this visits the stored data in non-decreasing (sorted) order.
+ *
+ * @param p_tree Pointer to the tree.
+ * @param order_func Function to perform on the data stored in each node of the tree as it is traversed.
+ */
+void bst_in_order(tree_t *p_tree, order_fn order_func);
 
 #endif // BST_H
 
