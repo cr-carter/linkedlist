@@ -351,6 +351,14 @@ void avl_in_order(tree_t *p_tree, order_fn order_func)
 
 // Static functions
 
+/**
+ * @brief Allocates and initializes a new internal tree node.
+ *
+ * @param p_data   Pointer to user data to store in the node.
+ * @param p_parent Pointer to the parent node in the tree. May be NULL if root.
+ *
+ * @return Pointer to the newly created node, or NULL if memory allocation fails.
+ */
 static node_t *static_create_node(void *p_data, node_t *p_parent)
 {
     node_t *p_retval = NULL;
@@ -370,6 +378,19 @@ static node_t *static_create_node(void *p_data, node_t *p_parent)
     return p_retval;
 }
 
+/**
+ * @brief Recursively inserts a new data item into the subtree.
+ *
+ * Traverses down the tree using the provided comparison function until an
+ * empty spot is found, then hooks in a newly created node.
+ *
+ * @param compare   The user-supplied comparison function pointer.
+ * @param p_current The root of the current subtree being evaluated.
+ * @param p_data    Pointer to user data to insert.
+ *
+ * @return Pointer to the newly created node, or NULL if it's a duplicate
+ * or allocation fails.
+ */
 static node_t *static_insert_data(compare_fn compare, node_t *p_current, void *p_data)
 {
     node_t *p_retval = NULL;
@@ -418,6 +439,15 @@ EXIT_FUNC:
     return p_retval;
 }
 
+/**
+ * @brief Recursively searches the subtree for a node matching the specified key.
+ *
+ * @param compare   The user-supplied comparison function pointer.
+ * @param p_current The root of the current subtree being searched.
+ * @param p_key     Pointer to the key used for matching.
+ *
+ * @return Pointer to the matching internal node, or NULL if not found.
+ */
 static node_t *static_find_node(compare_fn compare, node_t *p_current, void *p_key)
 {
     node_t *p_retval = NULL;
@@ -452,6 +482,15 @@ EXIT_FUNC:
     return p_retval;
 }
 
+/**
+ * @brief Finds the node with the minimum value in the given subtree.
+ *
+ * Traverses strictly along the left child pointers until the leafmost left node is reached.
+ *
+ * @param p_current The root of the subtree to search.
+ *
+ * @return Pointer to the node with the minimum key, or NULL if the subtree is empty.
+ */
 static node_t *static_min_node(node_t *p_current)
 {
     node_t *p_retval = NULL;
@@ -469,6 +508,15 @@ static node_t *static_min_node(node_t *p_current)
     return p_retval;
 }
 
+/**
+ * @brief Finds the node with the maximum value in the given subtree.
+ *
+ * Traverses strictly along the right child pointers until the leafmost right node is reached.
+ *
+ * @param p_current The root of the subtree to search.
+ *
+ * @return Pointer to the node with the maximum key, or NULL if the subtree is empty.
+ */
 static node_t *static_max_node(node_t *p_current)
 {
     node_t *p_retval = NULL;
@@ -486,6 +534,15 @@ static node_t *static_max_node(node_t *p_current)
     return p_retval;
 }
 
+/**
+ * @brief Safely destroys a single node and its contents.
+ *
+ * Invokes the user-supplied destroy function on the node's payload (if provided),
+ * frees the node memory, and nullifies the node pointer.
+ *
+ * @param p_tree         Pointer to the tree container context.
+ * @param pp_delete_me   Address of the node pointer to destroy and zero out.
+ */
 static void static_destroy_node(tree_t *p_tree, node_t **pp_delete_me)
 {
     if ((NULL != pp_delete_me) && (NULL != *pp_delete_me) && (NULL != p_tree))
@@ -499,6 +556,12 @@ static void static_destroy_node(tree_t *p_tree, node_t **pp_delete_me)
     }
 }
 
+/**
+ * @brief Recursively destroys all nodes within a subtree using post-order traversal.
+ *
+ * @param p_tree     Pointer to the tree container context.
+ * @param pp_current Address of the subtree root pointer to clear out.
+ */
 static void static_destroy_all_nodes(tree_t *p_tree, node_t **pp_current)
 {
     if ((NULL != pp_current) && (NULL != p_tree) && (NULL != *pp_current))
@@ -509,6 +572,15 @@ static void static_destroy_all_nodes(tree_t *p_tree, node_t **pp_current)
     }
 }
 
+/**
+ * @brief Replaces one subtree as a child of its parent with another subtree.
+ *
+ * Used primarily during node deletion to plug holes left by removed nodes.
+ *
+ * @param p_tree    Pointer to the tree container context (to update root if needed).
+ * @param p_delete  The node being replaced.
+ * @param p_replace The node taking its place. May be NULL.
+ */
 static void static_transplant(tree_t *p_tree, node_t *p_delete, node_t *p_replace)
 {
     if (p_delete->p_parent == NULL)
@@ -530,6 +602,13 @@ static void static_transplant(tree_t *p_tree, node_t *p_delete, node_t *p_replac
     }
 }
 
+/**
+ * @brief Helper utility to print structural formatting lines for tree visualization.
+ *
+ * Unwinds the trunk linked list to print branch lines in correct chronological order.
+ *
+ * @param p Pointer to the current structural trunk fragment.
+ */
 static void static_show_trunks(trunk_t *p)
 {
     if (p == NULL)
@@ -541,6 +620,17 @@ static void static_show_trunks(trunk_t *p)
     printf("%s", p->str);
 }
 
+/**
+ * @brief Recursively prints a graphical, rotated textual representation of the tree.
+ *
+ * Traverses reverse in-order (Right-Root-Left) to generate a top-to-bottom vertical
+ * visualization of the tree structure layout.
+ *
+ * @param p_node     The current node being processed.
+ * @param prev       Pointer to the previous branch trunk tracker.
+ * @param is_left    Flag tracking if the current node is a left child or right child.
+ * @param print_func User-supplied printer callback to render individual node data payloads.
+ */
 static void print_tree_recursive(node_t *p_node, trunk_t *prev, bool is_left, print_fn print_func)
 {
     if (p_node == NULL)
@@ -586,6 +676,14 @@ static void print_tree_recursive(node_t *p_node, trunk_t *prev, bool is_left, pr
     print_tree_recursive(p_node->p_left, &trunk, false, print_func);
 }
 
+/**
+ * @brief Executes an internal pre-order traversal starting from the current node.
+ *
+ * Visits nodes in Root -> Left -> Right sequence.
+ *
+ * @param p_current  The current node in the traversal.
+ * @param order_func User-supplied operational callback logic.
+ */
 static void static_pre_order(node_t *p_current, order_fn order_func)
 {
     if (NULL == p_current)
@@ -602,6 +700,14 @@ static void static_pre_order(node_t *p_current, order_fn order_func)
     static_pre_order(p_current->p_right, order_func);
 }
 
+/**
+ * @brief Executes an internal post-order traversal starting from the current node.
+ *
+ * Visits nodes in Left -> Right -> Root sequence.
+ *
+ * @param p_current  The current node in the traversal.
+ * @param order_func User-supplied operational callback logic.
+ */
 static void static_post_order(node_t *p_current, order_fn order_func)
 {
     if (NULL == p_current)
@@ -618,6 +724,14 @@ static void static_post_order(node_t *p_current, order_fn order_func)
     }
 }
 
+/**
+ * @brief Executes an internal in-order traversal starting from the current node.
+ *
+ * Visits nodes in Left -> Root -> Right sequence (sorted order).
+ *
+ * @param p_current  The current node in the traversal.
+ * @param order_func User-supplied operational callback logic.
+ */
 static void static_in_order(node_t *p_current, order_fn order_func)
 {
     if (NULL == p_current)
@@ -635,6 +749,12 @@ static void static_in_order(node_t *p_current, order_fn order_func)
     static_in_order(p_current->p_right, order_func);
 }
 
+/**
+ * @brief Safely retrieves the height of a given node.
+ *
+ * @param p_node Pointer to the node being queried.
+ * * @return The integer height of the node, or -1 if the node is NULL.
+ */
 static int static_get_height(node_t *p_node)
 {
     int retval = -1;
@@ -647,6 +767,13 @@ static int static_get_height(node_t *p_node)
     return retval;
 }
 
+/**
+ * @brief Recalculates and updates the height integer stored inside a node.
+ *
+ * Height is determined based on the maximum height value of its left and right children.
+ *
+ * @param p_node Pointer to the node whose height needs refreshing.
+ */
 static void static_update_height(node_t *p_node)
 {
     if (p_node != NULL)
@@ -665,6 +792,15 @@ static void static_update_height(node_t *p_node)
     }
 }
 
+/**
+ * @brief Calculates the balance factor of an internal tree node.
+ *
+ * Formula: $\text{Balance} = \text{Height(Left Child)} - \text{Height(Right Child)}$.
+ *
+ * @param p_node Pointer to the node to evaluate.
+ *
+ * @return The integer balance factor. Positive values imply left-heavy; negative imply right-heavy.
+ */
 static int static_get_balance(node_t *p_node)
 {
     int retval = 0;
@@ -677,6 +813,15 @@ static int static_get_balance(node_t *p_node)
     return retval;
 }
 
+/**
+ * @brief Walks back up towards the root from a modified node, restoring the AVL balance.
+ *
+ * Evaluates balance metrics, triggering single or double rotations on any subtrees
+ * violating AVL balance constraints (where balance factor magnitude $> 1$).
+ *
+ * @param p_tree Pointer to the main tree structure.
+ * @param p_node The starting node where insertion or deletion took place.
+ */
 static void static_balance_tree(tree_t *p_tree, node_t *p_node)
 {
     node_t *p_temp = p_node;
@@ -715,6 +860,14 @@ static void static_balance_tree(tree_t *p_tree, node_t *p_node)
     }
 }
 
+/**
+ * @brief Performs a single left rotation around the specified pivot node.
+ *
+ * Resets child/parent links and triggers height recalibration on shifted subtrees.
+ *
+ * @param p_tree   Pointer to the root-holding tree context.
+ * @param p_rotate The pivot node facing leftward structural rotation.
+ */
 static void static_left_rotate(tree_t *p_tree, node_t *p_rotate)
 {
     if ((NULL == p_tree) || (NULL == p_rotate) || (NULL == p_rotate->p_right))
@@ -753,6 +906,14 @@ static void static_left_rotate(tree_t *p_tree, node_t *p_rotate)
     static_update_height(p_right_child);
 }
 
+/**
+ * @brief Performs a single right rotation around the specified pivot node.
+ *
+ * Resets child/parent links and triggers height recalibration on shifted subtrees.
+ *
+ * @param p_tree   Pointer to the root-holding tree context.
+ * @param p_rotate The pivot node facing rightward structural rotation.
+ */
 static void static_right_rotate(tree_t *p_tree, node_t *p_rotate)
 {
     if ((NULL == p_tree) || (NULL == p_rotate) || (NULL == p_rotate->p_left))
@@ -765,7 +926,7 @@ static void static_right_rotate(tree_t *p_tree, node_t *p_rotate)
 
     if (NULL != p_rotate->p_left)
     {
-        p_rotate->p_right->p_parent = p_rotate;
+        p_rotate->p_left->p_parent = p_rotate;
     }
 
     p_left_child->p_parent = p_rotate->p_parent;
