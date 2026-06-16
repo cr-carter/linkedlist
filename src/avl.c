@@ -349,6 +349,8 @@ void avl_in_order(tree_t *p_tree, order_fn order_func)
     static_in_order(p_tree->p_root, order_func);
 }
 
+// Static functions
+
 static node_t *static_create_node(void *p_data, node_t *p_parent)
 {
     node_t *p_retval = NULL;

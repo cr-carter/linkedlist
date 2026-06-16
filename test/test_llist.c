@@ -156,7 +156,7 @@ void test_llist_insert_tail_bad(void)
 
 void test_llist_insert_at_good(void)
 {
-    printf("\nTesting llist_insert_after with good values...\n");
+    printf("\nTesting llist_insert_at with good values...\n");
     llist_t *p_list = llist_create();
     int test_data8 = 8;
     int test_data6 = 6;
@@ -196,7 +196,7 @@ void test_llist_insert_at_good(void)
 
 void test_llist_insert_at_bad(void)
 {
-    printf("\nTesting llist_insert_after with bad values...\n");
+    printf("\nTesting llist_insert_at with bad values...\n");
     int test_val = llist_insert_at(NULL, NULL, 1);
 
     if (-1 == test_val)
@@ -216,7 +216,7 @@ __attribute__((unused)) static int cmp_str(const void *p_a, const void *p_b)
 
 void test_llist_index_of_good(void)
 {
-    printf("\nTesting llist_find_node with good values...\n");
+    printf("\nTesting llist_index_of with good values...\n");
 
     llist_t *p_list = llist_create();
     char *test_data0 = calloc(1, sizeof(test_data0));
@@ -274,7 +274,7 @@ void test_llist_index_of_good(void)
 
 void test_llist_index_of_bad(void)
 {
-    printf("\nTesting llist_find_node with bad values...\n");
+    printf("\nTesting llist_index_of with bad values...\n");
 
     int test_val = llist_index_of(NULL, NULL, NULL);
 
@@ -294,6 +294,57 @@ void test_llist_index_of_bad(void)
     test_data1 = strcpy(test_data1, "b");
 
     test_val = llist_index_of(p_list, (char *)"c", cmp_str);
+
+    if (-1 == test_val)
+    {
+        TEST_PASS();
+    }
+    else
+    {
+        TEST_FAIL();
+    }
+}
+
+void test_llist_size_good(void)
+{
+    printf("\nTesting llist_size with good values...\n");
+
+    llist_t *p_list = llist_create();
+    char *test_data0 = calloc(1, sizeof(test_data0));
+    char *test_data1 = calloc(1, sizeof(test_data1));
+    char *test_data2 = calloc(1, sizeof(test_data2));
+    char *test_data3 = calloc(1, sizeof(test_data3));
+
+    test_data0 = strcpy(test_data0, "a");
+    test_data1 = strcpy(test_data1, "b");
+    test_data2 = strcpy(test_data2, "c");
+    test_data3 = strcpy(test_data3, "d");
+    // int test_data3 = 3;
+    // int test_data0 = 0;
+    // int test_data9 = 9;
+
+    llist_insert_head(p_list, test_data0);
+    llist_insert_tail(p_list, test_data1);
+    llist_insert_tail(p_list, test_data2);
+    llist_insert_tail(p_list, test_data3);
+
+    int test_val = llist_size(p_list);
+
+    if (4 == test_val)
+    {
+        TEST_PASS();
+    }
+    else
+    {
+        TEST_FAIL();
+    }
+}
+
+void test_llist_size_bad(void)
+{
+    printf("\nTesting llist_size with good values...\n");
+
+    int test_val = llist_size(NULL);
 
     if (-1 == test_val)
     {

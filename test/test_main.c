@@ -1,25 +1,35 @@
 #include "unity.h"
 
-// test_args
-void test_llist_create(void);
+// Test avl.c
+void test_avl_create_tree(void);
 
-void test_llist_destroy(void);
+void test_avl_add_node(void);
 
-void test_llist_insert_head_good(void);
+void test_avl_find(void);
 
-void test_llist_insert_head_bad(void);
+void test_avl_get_root(void);
 
-void test_llist_insert_tail_good(void);
+void test_avl_minimum_value(void);
 
-void test_llist_insert_tail_bad(void);
+void test_avl_maximum_value(void);
 
-void test_llist_insert_at_good(void);
+void test_avl_size_of_tree(void);
 
-void test_llist_insert_at_bad(void);
+void test_avl_is_empty(void);
 
-void test_llist_index_of_good(void);
+void test_avl_print(void);
 
-void test_llist_index_of_bad(void);
+void test_avl_delete_node(void);
+
+void test_avl_clear(void);
+
+void test_avl_destroy_tree(void);
+
+void test_avl_pre_order(void);
+
+void test_avl_post_order(void);
+
+void test_avl_in_order(void);
 
 void setUp(void)
 {
@@ -33,23 +43,27 @@ int main(void)
 
     UNITY_BEGIN();
 
-    RUN_TEST(test_llist_create);
+    RUN_TEST(test_avl_create_tree);
 
-    RUN_TEST(test_llist_destroy);
+    RUN_TEST(test_avl_destroy_tree);
 
-    RUN_TEST(test_llist_insert_head_good);
+    RUN_TEST(test_avl_clear);
 
-    RUN_TEST(test_llist_insert_head_bad);
+    RUN_TEST(test_avl_delete_node);
 
-    RUN_TEST(test_llist_insert_tail_good);
+    RUN_TEST(test_avl_add_node);
 
-    RUN_TEST(test_llist_insert_tail_bad);
+    RUN_TEST(test_avl_find);
 
-    RUN_TEST(test_llist_insert_at_good);
+    RUN_TEST(test_avl_get_root);
 
-    RUN_TEST(test_llist_insert_at_bad);
+    RUN_TEST(test_avl_minimum_value);
 
-    RUN_TEST(test_llist_index_of_good);
+    RUN_TEST(test_avl_maximum_value);
+
+    RUN_TEST(test_avl_size_of_tree);
+
+    RUN_TEST(test_avl_is_empty);
 
     UNITY_END();
 
