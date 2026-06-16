@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "dll.h"
+#include "avl.h"
 
 #define ARR_LEN(arr) (sizeof(arr) / sizeof(*arr))
 
@@ -15,32 +15,10 @@ int cmp_qsort(const void *p_left, const void *p_right)
 
 int int_qsort(const void *p_left, const void *p_right)
 {
-    if (**(int **)p_left == **(int **)p_right)
-    {
-        return 0;
-    }
-
-    if (**(int **)p_left > **(int **)p_right)
-    {
-        return 1;
-    }
-
-    return -1;
-}
-
-// you would not want to expose the internal address of your node, so no deref
-int cmp_dll(const void *p_left, const void *p_right)
-{
-    return strcmp((const char *)p_left, (const char *)p_right);
-}
-
-int int_cmp_dll(const void *p_left, const void *p_right)
-{
     if (*(int *)p_left == *(int *)p_right)
     {
         return 0;
     }
-
     if (*(int *)p_left > *(int *)p_right)
     {
         return 1;
@@ -49,104 +27,212 @@ int int_cmp_dll(const void *p_left, const void *p_right)
     return -1;
 }
 
-void print_dll(void *p_data)
+void print_int(const void *p_data)
 {
-    printf("%s <-> ", (const char *)p_data);
-}
-
-void print_int_dll(void *p_data)
-{
-    printf("%d <-> ", *(int *)p_data);
+    printf("%i - ", *(int *)p_data);
 }
 
 int main(void)
 {
-    // no p, since it's an array OF pointers (I think this is right?)
-    const char *words[] = {
-        "tangerine", "apple", "fig",   "mango",  "cherry", "banana", "date",      "elderberry",
-        "grape",     "kiwi",  "lemon", "orange", "papaya", "quince", "raspberry",
-    };
+    tree_t *p_tree = avl_create_tree(int_qsort, free);
 
-    int arr_len = ARR_LEN(words);
-
-    dll_t *p_dll = dll_create();
-    assert(p_dll != NULL);
-
-    for (int idx = 0; idx < arr_len; idx++)
-    {
-        if (-1 == dll_insert_tail(p_dll, (char *)words[idx]))
-        {
-            fprintf(stderr, "[ERR]: Insertion of %s\n", words[idx]);
-            break;
-        }
-    }
-
-    qsort(words, (size_t)arr_len, sizeof(*words), cmp_qsort);
-    dll_selection_sort(p_dll, cmp_dll);
-
-    for (int idx = 0; idx < arr_len; idx++)
-    {
-        printf("%s     ", words[idx]);
-    }
-    puts("");
-
-    dll_iterate(p_dll, print_dll);
-    puts("");
-
-    dll_destroy(&p_dll, NULL);
-
-    /* ------------------------ */
-    /* ----- Integer test ----- */
-    /* ------------------------ */
-    int *test6 = calloc(1, sizeof(int));
-    *test6 = 6;
-    int *test5 = calloc(1, sizeof(int));
-    *test5 = 5;
-    int *test3 = calloc(1, sizeof(int));
-    *test3 = 3;
-    int *test8 = calloc(1, sizeof(int));
-    *test8 = 8;
     int *test1 = calloc(1, sizeof(int));
-    *test1 = 1;
-    int *test7 = calloc(1, sizeof(int));
-    *test7 = 7;
     int *test2 = calloc(1, sizeof(int));
+    int *test3 = calloc(1, sizeof(int));
+    int *test4 = calloc(1, sizeof(int));
+    int *test5 = calloc(1, sizeof(int));
+    int *test6 = calloc(1, sizeof(int));
+    int *test7 = calloc(1, sizeof(int));
+    int *test8 = calloc(1, sizeof(int));
+    int *test9 = calloc(1, sizeof(int));
+    int *test10 = calloc(1, sizeof(int));
+    int *test11 = calloc(1, sizeof(int));
+    int *test12 = calloc(1, sizeof(int));
+    int *test13 = calloc(1, sizeof(int));
+    int *test14 = calloc(1, sizeof(int));
+    int *test15 = calloc(1, sizeof(int));
+
+    *test1 = 1;
     *test2 = 2;
+    *test3 = 3;
+    *test4 = 4;
+    *test5 = 5;
+    *test6 = 6;
+    *test7 = 7;
+    *test8 = 8;
+    *test9 = 9;
+    *test10 = 10;
+    *test11 = 11;
+    *test12 = 12;
+    *test13 = 13;
+    *test14 = 14;
+    *test15 = 15;
 
-    int *ints[] = {test6, test5, test3, test8, test1, test7, test2};
+    avl_add_node(p_tree, test1);
+    avl_add_node(p_tree, test2);
+    avl_add_node(p_tree, test3);
+    avl_add_node(p_tree, test4);
+    avl_add_node(p_tree, test5);
+    avl_add_node(p_tree, test6);
+    avl_add_node(p_tree, test7);
+    avl_add_node(p_tree, test8);
+    avl_add_node(p_tree, test9);
+    avl_add_node(p_tree, test10);
+    avl_add_node(p_tree, test11);
+    avl_add_node(p_tree, test12);
+    avl_add_node(p_tree, test13);
+    avl_add_node(p_tree, test14);
+    avl_add_node(p_tree, test15);
 
-    arr_len = ARR_LEN(ints);
+    printf("##### Here is your tree #####\n");
+    avl_print(p_tree, print_int);
 
-    p_dll = dll_create();
-    assert(p_dll != NULL);
+    printf("\n\n");
 
-    for (int idx = 0; idx < arr_len; idx++)
+    printf("##### Check data #####\n");
+    printf("avl_is_empty()\nExpected: false\nActual: ");
+    if (avl_is_empty(p_tree))
     {
-        if (-1 == dll_insert_tail(p_dll, ints[idx]))
-        {
-            fprintf(stderr, "[ERR]: Insertion of %i\n", *ints[idx]);
-            break;
-        }
+        printf("true\n");
     }
-
-    qsort(ints, (size_t)arr_len, sizeof(*ints), int_qsort);
-    dll_insertion_sort(p_dll, int_cmp_dll);
-
-    for (int idx = 0; idx < arr_len; idx++)
+    else
     {
-        printf("%d     ", *ints[idx]);
+        printf("false\n");
     }
     puts("");
 
-    dll_iterate(p_dll, print_int_dll);
+    printf("avl_size_of_tree()\nExpected: 15\nActual: ");
+    size_t tree_size = avl_size_of_tree(p_tree);
+    printf("%zu\n", tree_size);
     puts("");
 
-    dll_destroy(&p_dll, NULL);
-    free(test1);
-    free(test2);
-    free(test3);
-    free(test5);
-    free(test6);
-    free(test7);
-    free(test8);
+    printf("avl_minimum_value()\nExpected: 1\nActual: ");
+    int *min_value = avl_minimum_value(p_tree);
+    printf("%i\n", *min_value);
+    puts("");
+
+    printf("avl_maximum_value()\nExpected: 15\nActual: ");
+    int *max_value = avl_maximum_value(p_tree);
+    printf("%i", *max_value);
+    puts("\n");
+
+    printf("avl_in_order\n");
+    avl_in_order(p_tree, print_int);
+    printf("\n\n");
+
+    printf("avl_pre_order\n");
+    avl_pre_order(p_tree, print_int);
+    printf("\n\n");
+
+    printf("avl_post_order\n");
+    avl_post_order(p_tree, print_int);
+    printf("\n\n");
+
+    avl_delete_node(p_tree, test15);
+    avl_delete_node(p_tree, test12);
+    avl_delete_node(p_tree, test4);
+    avl_delete_node(p_tree, test3);
+    avl_delete_node(p_tree, test2);
+    avl_delete_node(p_tree, test1);
+
+    printf("##### Here is modified tree #####\n");
+    avl_print(p_tree, print_int);
+
+    printf("\n\n");
+
+    printf("##### Check data #####\n");
+    printf("avl_is_empty()\nExpected: false\nActual: ");
+    if (avl_is_empty(p_tree))
+    {
+        printf("true\n");
+    }
+    else
+    {
+        printf("false\n");
+    }
+    puts("");
+
+    printf("avl_size_of_tree()\nExpected: 9\nActual: ");
+    tree_size = avl_size_of_tree(p_tree);
+    printf("%zu\n", tree_size);
+    puts("");
+
+    printf("avl_minimum_value()\nExpected: 5\nActual: ");
+    min_value = avl_minimum_value(p_tree);
+    printf("%i\n", *min_value);
+    puts("");
+
+    printf("avl_maximum_value()\nExpected: 14\nActual: ");
+    max_value = avl_maximum_value(p_tree);
+    printf("%i", *max_value);
+    puts("\n");
+
+    printf("avl_in_order\n");
+    avl_in_order(p_tree, print_int);
+    printf("\n\n");
+
+    printf("avl_pre_order\n");
+    avl_pre_order(p_tree, print_int);
+    printf("\n\n");
+
+    printf("avl_post_order\n");
+    avl_post_order(p_tree, print_int);
+    printf("\n\n");
+
+     printf("##### Here is modified tree #####\n");
+    test15 = calloc(1, sizeof(int));
+    test12 = calloc(1, sizeof(int));
+    test2 = calloc(1, sizeof(int));
+    test4 = calloc(1, sizeof(int));
+    test3 = calloc(1, sizeof(int));
+    test1 = calloc(1, sizeof(int));
+
+    *test15 = 15;
+    *test12 = 12;
+    *test2 = 2;
+    *test4 = 4;
+    *test3 = 3;
+    *test1 = 1;
+
+    avl_add_node(p_tree, test15);
+    avl_add_node(p_tree, test12);
+    avl_add_node(p_tree, test2);
+    avl_add_node(p_tree, test4);
+    avl_add_node(p_tree, test3);
+    avl_add_node(p_tree, test1);
+
+    avl_print(p_tree, print_int);
+    puts("\n");
+
+    printf("##### avl_clear() #####\n");
+    avl_clear(p_tree);
+
+    printf("avl_size_of_tree()\nExpected: 0\nActual: ");
+    tree_size = avl_size_of_tree(p_tree);
+    printf("%zu\n", tree_size);
+    puts("");
+
+    printf("avl_minimum_value()\nExpected: 0\nActual: ");
+    min_value = avl_minimum_value(p_tree);
+    printf("%i\n", (NULL != min_value) ? *min_value : 0);
+    puts("");
+
+    printf("avl_maximum_value()\nExpected: 0\nActual: ");
+    max_value = avl_maximum_value(p_tree);
+    printf("%i", (NULL != max_value) ? *max_value : 0);
+    puts("\n");
+
+    printf("avl_in_order\n");
+    avl_in_order(p_tree, print_int);
+    printf("\n\n");
+
+    printf("avl_pre_order\n");
+    avl_pre_order(p_tree, print_int);
+    printf("\n\n");
+
+    printf("avl_post_order\n");
+    avl_post_order(p_tree, print_int);
+    printf("\n\n");
+
+    avl_destroy_tree(&p_tree);
 }
