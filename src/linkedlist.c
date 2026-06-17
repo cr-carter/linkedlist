@@ -179,7 +179,7 @@ int main(void)
     avl_post_order(p_tree, print_int);
     printf("\n\n");
 
-     printf("##### Here is modified tree #####\n");
+    printf("##### Here is modified tree #####\n");
     test15 = calloc(1, sizeof(int));
     test12 = calloc(1, sizeof(int));
     test2 = calloc(1, sizeof(int));

@@ -1,7 +1,7 @@
 /**
  * @file avl.h
  * @author Chase Carter
- * @brief Binary Search Tree Aavlract Data Type.
+ * @brief Binary Search Tree Abstract Data Type.
  *
  * This module provides an implementation of a binary search tree (avl)
  * that stores generic user data through void pointers. Users interact
@@ -12,8 +12,8 @@
  * comparison function.
  */
 
-#ifndef avl_H
-#define avl_H
+#ifndef AVL_H
+#define AVL_H
 
 #include <stdbool.h>
 #include <stdlib.h>
@@ -102,7 +102,7 @@ bool avl_add_node(tree_t *p_tree, void *p_data);
  * @return Pointer to the matching stored data, or NULL if no matching
  * data exists in the tree.
  */
-void *avl_find(tree_t *p_tree, void *p_key);
+void *avl_find(const tree_t *p_tree, const void *p_key);
 
 /**
  * @brief Retrieves the data stored in the root node.
@@ -113,7 +113,7 @@ void *avl_find(tree_t *p_tree, void *p_key);
  *
  * @return Pointer to the root node's data, or NULL if the tree is empty.
  */
-void *avl_get_root(tree_t *p_tree);
+void *avl_get_root(const tree_t *p_tree);
 
 /**
  * @brief Retrieves the minimum value stored in the tree.
@@ -122,7 +122,7 @@ void *avl_get_root(tree_t *p_tree);
  *
  * @return Pointer to the minimum data value, or NULL if the tree is empty.
  */
-void *avl_minimum_value(tree_t *p_tree);
+void *avl_minimum_value(const tree_t *p_tree);
 
 /**
  * @brief Retrieves the maximum value stored in the tree.
@@ -131,7 +131,7 @@ void *avl_minimum_value(tree_t *p_tree);
  *
  * @return Pointer to the maximum data value, or NULL if the tree is empty.
  */
-void *avl_maximum_value(tree_t *p_tree);
+void *avl_maximum_value(const tree_t *p_tree);
 
 /**
  * @brief Returns the number of nodes currently stored in the tree.
@@ -140,7 +140,7 @@ void *avl_maximum_value(tree_t *p_tree);
  *
  * @return Number of nodes in the tree.
  */
-size_t avl_size_of_tree(tree_t *p_tree);
+size_t avl_size_of_tree(const tree_t *p_tree);
 
 /**
  * @brief Determines whether the tree is empty.
@@ -151,7 +151,7 @@ size_t avl_size_of_tree(tree_t *p_tree);
  *
  * @return true if the tree contains no nodes, false otherwise.
  */
-bool avl_is_empty(tree_t *p_tree);
+bool avl_is_empty(const tree_t *p_tree);
 
 /**
  * @brief Prints the contents of the tree in sorted order.
@@ -238,6 +238,6 @@ void avl_post_order(tree_t *p_tree, order_fn order_func);
  */
 void avl_in_order(tree_t *p_tree, order_fn order_func);
 
-#endif // avl_H
+#endif // AVL_H
 
 /* End of file avl.h */

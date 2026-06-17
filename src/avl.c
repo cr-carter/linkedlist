@@ -1,7 +1,7 @@
 /**
  * @file avl.c
  * @author Chase Carter
- * @brief Binary Search Tree Aavlract Data Type.
+ * @brief Binary Search Tree Abstract Data Type.
  *
  * This module provides an implementation of a binary search tree (BST)
  * that stores generic user data through void pointers. Users interact
@@ -137,7 +137,7 @@ EXIT_FUNC:
     return retval;
 }
 
-void *avl_find(tree_t *p_tree, void *p_key)
+void *avl_find(const tree_t *p_tree, const void *p_key)
 {
     void *p_retval = NULL;
 
@@ -157,7 +157,7 @@ EXIT_FUNC:
     return p_retval;
 }
 
-void *avl_get_root(tree_t *p_tree)
+void *avl_get_root(const tree_t *p_tree)
 {
     void *p_retval = NULL;
 
@@ -169,7 +169,7 @@ void *avl_get_root(tree_t *p_tree)
     return p_retval;
 }
 
-void *avl_minimum_value(tree_t *p_tree)
+void *avl_minimum_value(const tree_t *p_tree)
 {
     void *p_retval = NULL;
 
@@ -182,7 +182,7 @@ void *avl_minimum_value(tree_t *p_tree)
     return p_retval;
 }
 
-void *avl_maximum_value(tree_t *p_tree)
+void *avl_maximum_value(const tree_t *p_tree)
 {
     void *p_retval = NULL;
 
@@ -195,7 +195,7 @@ void *avl_maximum_value(tree_t *p_tree)
     return p_retval;
 }
 
-size_t avl_size_of_tree(tree_t *p_tree)
+size_t avl_size_of_tree(const tree_t *p_tree)
 {
     size_t retval = 0;
 
@@ -207,7 +207,7 @@ size_t avl_size_of_tree(tree_t *p_tree)
     return retval;
 }
 
-bool avl_is_empty(tree_t *p_tree)
+bool avl_is_empty(const tree_t *p_tree)
 {
     bool retval = false;
 
@@ -841,7 +841,7 @@ static void static_balance_tree(tree_t *p_tree, node_t *p_node)
             }
             // LL Case
             static_right_rotate(p_tree, p_temp);
-            p_temp = p_temp->p_parent; // Adjust pointer since step shifted down
+            p_temp = p_temp->p_parent;
         }
         // Right Heavy (RR or RL)
         else if (balance < -1)
