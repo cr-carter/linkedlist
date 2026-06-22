@@ -88,7 +88,7 @@ tree_t *avl_create_tree(compare_fn compare, destroy_fn destroy);
  * If insertion fails due to duplicate data, ownership remains with
  * the caller and the caller is responsible for freeing p_data.
  */
-bool avl_add_node(tree_t *p_tree, void *p_data);
+bool avl_insert(tree_t *p_tree, void *p_data);
 
 /**
  * @brief Searches the tree for data matching the specified key.
@@ -178,7 +178,7 @@ void avl_print(tree_t *p_tree, print_fn print);
  * @note If the value is found, the tree's destroy function is called on
  * the stored data before the node is removed.
  */
-bool avl_delete_node(tree_t *p_tree, void *p_key);
+bool avl_remove(tree_t *p_tree, void *p_key);
 
 /**
  * @brief Removes all nodes from the tree.

@@ -96,7 +96,7 @@ tree_t *avl_create_tree(compare_fn compare, destroy_fn destroy)
     return p_retval;
 }
 
-bool avl_add_node(tree_t *p_tree, void *p_data)
+bool avl_insert(tree_t *p_tree, void *p_data)
 {
     bool retval = false;
 
@@ -229,7 +229,7 @@ void avl_print(tree_t *p_tree, print_fn print)
     print_tree_recursive(p_tree->p_root, NULL, false, print);
 }
 
-bool avl_delete_node(tree_t *p_tree, void *p_key)
+bool avl_remove(tree_t *p_tree, void *p_key)
 {
     bool retval = false;
 
@@ -259,7 +259,7 @@ bool avl_delete_node(tree_t *p_tree, void *p_key)
     }
     else
     {
-        node_t *p_replace_with = static_max_node(p_delete_me->p_left);
+        node_t *p_replace_with = static_min_node(p_delete_me->p_right);
 
         if (p_replace_with->p_parent == p_delete_me)
         {
@@ -268,31 +268,26 @@ bool avl_delete_node(tree_t *p_tree, void *p_key)
         else
         {
             p_start = p_replace_with->p_parent;
-            static_transplant(p_tree, p_replace_with, p_replace_with->p_left);
-            p_replace_with->p_left = p_delete_me->p_left;
-            p_replace_with->p_left->p_parent = p_replace_with;
+            static_transplant(p_tree, p_replace_with, p_replace_with->p_right);
+            p_replace_with->p_right = p_delete_me->p_right;
+            p_replace_with->p_right->p_parent = p_replace_with;
         }
 
         static_transplant(p_tree, p_delete_me, p_replace_with);
-
-        p_replace_with->p_right = p_delete_me->p_right;
-        p_replace_with->p_right->p_parent = p_replace_with;
+        p_replace_with->p_left = p_delete_me->p_left;
+        p_replace_with->p_left->p_parent = p_replace_with;
     }
 
     static_destroy_node(p_tree, &p_delete_me);
     p_tree->size--;
-    retval = true;
 
     if (NULL != p_start)
     {
         static_balance_tree(p_tree, p_start);
     }
-    else
+    else if (NULL != p_tree->p_root)
     {
-        if (NULL != p_tree->p_root)
-        {
-            static_balance_tree(p_tree, p_tree->p_root);
-        }
+        static_balance_tree(p_tree, p_tree->p_root);
     }
 
 EXIT_FUNC:
@@ -795,7 +790,7 @@ static void static_update_height(node_t *p_node)
 /**
  * @brief Calculates the balance factor of an internal tree node.
  *
- * Formula: $\text{Balance} = \text{Height(Left Child)} - \text{Height(Right Child)}$.
+ * Formula: Balance = Height(Left Child) - Height(Right Child).
  *
  * @param p_node Pointer to the node to evaluate.
  *
@@ -817,7 +812,7 @@ static int static_get_balance(node_t *p_node)
  * @brief Walks back up towards the root from a modified node, restoring the AVL balance.
  *
  * Evaluates balance metrics, triggering single or double rotations on any subtrees
- * violating AVL balance constraints (where balance factor magnitude $> 1$).
+ * violating AVL balance constraints (where balance factor magnitude > 1).
  *
  * @param p_tree Pointer to the main tree structure.
  * @param p_node The starting node where insertion or deletion took place.
@@ -841,7 +836,6 @@ static void static_balance_tree(tree_t *p_tree, node_t *p_node)
             }
             // LL Case
             static_right_rotate(p_tree, p_temp);
-            p_temp = p_temp->p_parent;
         }
         // Right Heavy (RR or RL)
         else if (balance < -1)
@@ -853,7 +847,6 @@ static void static_balance_tree(tree_t *p_tree, node_t *p_node)
             }
             // RR Case
             static_left_rotate(p_tree, p_temp);
-            p_temp = p_temp->p_parent;
         }
 
         p_temp = p_temp->p_parent;
