@@ -74,7 +74,7 @@ dll_t *dll_create(void);
  * @brief Insert data at the head of the list. O(1)
  *
  * @param[in] p_list  List to insert into. Must be non-NULL.
- * @param[in] p_data  Data pointer to store. Must be non-NULL.
+ * @param[in] p_data  Data pointer to store. Can be NULL.
  *
  * @return 1 on success, -1 on failure (e.g., NULL argument or allocation failure).
  */
@@ -84,7 +84,7 @@ int dll_insert_head(dll_t *p_list, void *p_data);
  * @brief Insert data at the tail of the list. O(1)
  *
  * @param[in] p_list  List to insert into. Must be non-NULL.
- * @param[in] p_data  Data pointer to store. Must be non-NULL.
+ * @param[in] p_data  Data pointer to store. Can be NULL.
  *
  * @return 1 on success, -1 on failure (e.g., NULL argument or allocation failure).
  */
@@ -182,9 +182,9 @@ void dll_selection_sort(dll_t *p_list, dll_compar_f cmp_func);
 /* ------------------------------------------------------------------ */
 
 /**
- * @brief Allocate an iterator positioned before the head. O(1)
+ * @brief Allocate an iterator positioned on the head. O(1)
  *
- * The iterator starts in at the head; call dll_iter_next()
+ * The iterator starts on the head; call dll_iter_next()
  * to advance to the next element.
  *
  * @param[in] p_list  List to iterate over. Must be non-NULL.

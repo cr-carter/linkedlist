@@ -28,6 +28,8 @@ static void node_link_head(dll_t *p_list, node_t *p_new);
 
 static void node_link_tail(dll_t *p_list, node_t *p_new);
 
+static void swap_nodes(dll_t *p_list, node_t *p_node1, node_t *p_node2);
+
 dll_t *dll_create(void)
 {
     dll_t *retval = calloc(1, sizeof(dll_t));
@@ -148,10 +150,7 @@ void dll_destroy(dll_t **pp_list, dll_del_f del_func)
                 del_func(p_delete->p_data);
             }
 
-            if (NULL != p_delete)
-            {
-                free(p_delete);
-            }
+            free(p_delete);
         }
         free(*pp_list);
         *pp_list = NULL;
@@ -174,122 +173,75 @@ void dll_iterate(dll_t *p_list, dll_iter_f iter_f)
 {
     if ((NULL != p_list) && (NULL != iter_f))
     {
-        for (node_t *p_temp = p_list->p_head; NULL != p_temp; p_temp = p_temp->p_next)
+        for (node_t *p_temp = p_list->p_head; NULL != p_temp;)
         {
+            node_t *p_next = p_temp->p_next;
             iter_f(p_temp->p_data);
+            p_temp = p_next;
         }
     }
-}
-
-static void insert_node_before(dll_t *p_list, node_t *p_position, node_t *p_insert)
-{
-    // Update head if inserting before current node
-    if (NULL == p_position->p_previous)
-    {
-        p_list->p_head = p_insert;
-    }
-
-    // Update tail if inserting tail before another node
-    if (p_insert == p_list->p_tail)
-    {
-        p_list->p_tail = p_insert->p_previous;
-    }
-
-    p_insert->p_previous->p_next = p_insert->p_next;
-
-    if (NULL != p_insert->p_next)
-    {
-        p_insert->p_next->p_previous = p_insert->p_previous;
-    }
-
-    p_insert->p_previous = p_position->p_previous;
-
-    p_insert->p_next = p_position;
-
-    if (NULL != p_position->p_previous)
-    {
-        p_position->p_previous->p_next = p_insert;
-    }
-    p_position->p_previous = p_insert;
 }
 
 void dll_selection_sort(dll_t *p_list, dll_compar_f cmp_func)
 {
-    if ((NULL != p_list) && (NULL != cmp_func) && (1 < p_list->size))
+    if ((NULL == p_list) || (NULL == cmp_func) || (2 > p_list->size))
     {
-        int loop_count = 0;
-        for (node_t *p_unsorted_beginning = p_list->p_head; NULL != p_unsorted_beginning->p_next;)
+        return;
+    }
+
+    for (node_t *p_unsorted_beginning = p_list->p_head; NULL != p_unsorted_beginning;)
+    {
+        node_t *p_next_to_sort = p_unsorted_beginning->p_next;
+        node_t *p_comparator = p_unsorted_beginning;
+        node_t *p_iterator = p_unsorted_beginning->p_next;
+
+        for (; NULL != p_iterator; p_iterator = p_iterator->p_next)
         {
-
-            node_t *p_comparator = p_unsorted_beginning;
-            node_t *p_iterator = p_unsorted_beginning->p_next;
-
-            for (; NULL != p_iterator; p_iterator = p_iterator->p_next)
+            if (0 < cmp_func(p_comparator->p_data, p_iterator->p_data))
             {
-                if (0 < cmp_func(p_comparator->p_data, p_iterator->p_data))
-                {
-                    p_comparator = p_iterator;
-                }
+                p_comparator = p_iterator;
             }
-
-            if (0 < cmp_func(p_unsorted_beginning->p_data, p_comparator->p_data))
-            {
-                insert_node_before(p_list, p_unsorted_beginning, p_comparator);
-            }
-            else
-            {
-                p_unsorted_beginning = p_unsorted_beginning->p_next;
-                if (NULL == p_unsorted_beginning->p_next)
-                {
-                    p_list->p_tail = p_unsorted_beginning;
-                }
-            }
-            loop_count += 1;
         }
+
+        if (p_comparator != p_unsorted_beginning)
+        {
+            swap_nodes(p_list, p_unsorted_beginning, p_comparator);
+        }
+
+        p_unsorted_beginning = p_next_to_sort;
     }
 }
 
 void dll_insertion_sort(dll_t *p_list, dll_compar_f cmp_func)
 {
-    if ((NULL != p_list) && (NULL != cmp_func) && (1 < p_list->size))
+    if ((NULL == p_list) || (NULL == cmp_func) || (2 > p_list->size))
     {
-        node_t *p_current = p_list->p_head->p_next;
+        return;
+    }
 
-        while (NULL != p_current)
+    node_t *p_current = p_list->p_head->p_next;
+
+    while (NULL != p_current)
+    {
+        // Save next node
+        node_t *p_next_to_sort = p_current->p_next;
+        node_t *p_search = p_current;
+
+        while (NULL != p_search->p_previous)
         {
-            // Save next node
-            node_t *p_next_to_sort = p_current->p_next;
-            // Search backward
-            node_t *p_search = p_current->p_previous;
-            int b_move = 0;
-
-            while (NULL != p_search)
+            // Check if current is less than search
+            if (0 > cmp_func(p_current->p_data, p_search->p_previous->p_data))
             {
-                // Check if current is less than search
-                if (0 > cmp_func(p_current->p_data, p_search->p_data))
-                {
-                    b_move = 1;
-
-                    if (NULL == p_search->p_previous)
-                    {
-                        break;
-                    }
-                    p_search = p_search->p_previous;
-                }
-                else
-                {
-                    p_search = p_search->p_next;
-                    break;
-                }
+                node_t *p_prev_node = p_search->p_previous;
+                swap_nodes(p_list, p_prev_node, p_search);
             }
-
-            if (1 == b_move)
+            else
             {
-                insert_node_before(p_list, p_search, p_current);
+                break;
             }
-
-            p_current = p_next_to_sort;
         }
+
+        p_current = p_next_to_sort;
     }
 }
 
@@ -300,8 +252,12 @@ dll_iter_t *dll_iter_create(dll_t **pp_list)
     if ((NULL != pp_list) && (NULL != *pp_list))
     {
         p_retval = calloc(1, sizeof(*p_retval));
-        p_retval->pp_dll = pp_list;
-        p_retval->p_current = (*p_retval->pp_dll)->p_head;
+
+        if (NULL != p_retval)
+        {
+            p_retval->pp_dll = pp_list;
+            p_retval->p_current = NULL;
+        }
     }
 
     return p_retval;
@@ -313,9 +269,20 @@ void *dll_iter_next(dll_iter_t *p_iter)
 
     if ((NULL != p_iter) && (NULL != *p_iter->pp_dll))
     {
-        if ((NULL != p_iter->p_current) && (NULL != p_iter->p_current->p_next))
+        node_t *p_next = NULL;
+
+        if (NULL != p_iter->p_current)
         {
-            p_iter->p_current = p_iter->p_current->p_next;
+            p_next = p_iter->p_current->p_next;
+        }
+        else
+        {
+            p_next = (*p_iter->pp_dll)->p_head;
+        }
+
+        if (NULL != p_next)
+        {
+            p_iter->p_current = p_next;
             p_retval = p_iter->p_current->p_data;
         }
     }
@@ -329,9 +296,17 @@ void *dll_iter_prev(dll_iter_t *p_iter)
 
     if ((NULL != p_iter) && (NULL != *p_iter->pp_dll))
     {
-        if ((NULL != p_iter->p_current) && (NULL != p_iter->p_current->p_previous))
+        if (NULL != p_iter->p_current)
         {
             p_iter->p_current = p_iter->p_current->p_previous;
+        }
+        else
+        {
+            p_iter->p_current = (*p_iter->pp_dll)->p_tail;
+        }
+
+        if (NULL != p_iter->p_current)
+        {
             p_retval = p_iter->p_current->p_data;
         }
     }
@@ -366,7 +341,7 @@ int dll_iter_reset(dll_iter_t *p_iter)
 
     if ((NULL != p_iter) && (NULL != (*p_iter->pp_dll)) && (NULL != (*p_iter->pp_dll)->p_head))
     {
-        p_iter->p_current = (*p_iter->pp_dll)->p_head;
+        p_iter->p_current = NULL;
         retval = 1;
     }
 
@@ -419,6 +394,89 @@ static void node_link_tail(dll_t *p_list, node_t *p_new)
     }
 
     p_list->p_tail = p_new;
+}
+
+static void swap_nodes(dll_t *p_list, node_t *p_node1, node_t *p_node2)
+{
+    if ((NULL == p_list) || (NULL == p_node1) || (NULL == p_node2))
+    {
+        return;
+    }
+
+    if (p_node1 == p_node2)
+    {
+        return;
+    }
+
+    // 1. Identify structural adjacency
+    node_t *p1_prev = p_node1->p_previous;
+    node_t *p1_next = p_node1->p_next;
+    node_t *p2_prev = p_node2->p_previous;
+    node_t *p2_next = p_node2->p_next;
+
+    // 2. Handle Adjacency Cases (If Node 2 is right after Node 1, or vice versa)
+    if (p1_next == p_node2)
+    {
+        p_node1->p_next = p2_next;
+        p_node1->p_previous = p_node2;
+        p_node2->p_next = p_node1;
+        p_node2->p_previous = p1_prev;
+    }
+    else if (p2_next == p_node1)
+    {
+        p_node2->p_next = p1_next;
+        p_node2->p_previous = p_node1;
+        p_node1->p_next = p_node2;
+        p_node1->p_previous = p2_prev;
+    }
+    else
+    {
+        // General distant swap case
+        p_node1->p_next = p2_next;
+        p_node1->p_previous = p2_prev;
+        p_node2->p_next = p1_next;
+        p_node2->p_previous = p1_prev;
+    }
+
+    // 3. Update outer neighbor links pointing inward
+    if (p_node1->p_previous != NULL)
+    {
+        p_node1->p_previous->p_next = p_node1;
+    }
+
+    if (p_node1->p_next != NULL)
+    {
+        p_node1->p_next->p_previous = p_node1;
+    }
+
+    if (p_node2->p_previous != NULL)
+    {
+        p_node2->p_previous->p_next = p_node2;
+    }
+
+    if (p_node2->p_next != NULL)
+    {
+        p_node2->p_next->p_previous = p_node2;
+    }
+
+    // 4. Update List Boundaries (Head / Tail management)
+    if (p_list->p_head == p_node1)
+    {
+        p_list->p_head = p_node2;
+    }
+    else if (p_list->p_head == p_node2)
+    {
+        p_list->p_head = p_node1;
+    }
+
+    if (p_list->p_tail == p_node1)
+    {
+        p_list->p_tail = p_node2;
+    }
+    else if (p_list->p_tail == p_node2)
+    {
+        p_list->p_tail = p_node1;
+    }
 }
 
 /* End of file dll.c */
