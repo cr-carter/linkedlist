@@ -29,7 +29,7 @@ static void static_node_link_head(deque_t *p_q, node_t *p_new);
 
 static void static_node_link_tail(deque_t *p_q, node_t *p_new);
 
-static void *static_remove_head(deque_t *q);
+static void *static_remove_head(deque_t *p_q);
 
 int deque_push_front(deque_t *p_q, void *p_data)
 {
@@ -179,23 +179,19 @@ static void *static_remove_head(deque_t *p_q)
 
     if ((NULL != p_q) && (NULL != p_q->p_head))
     {
-        if (p_q->p_head == p_q->p_tail)
+        p_remove = p_q->p_head;
+        retval = p_remove->p_data;
+        p_q->p_head = p_remove->p_next;
+
+        if (NULL != p_q->p_head)
+        {
+            p_q->p_head->p_previous = NULL;
+        }
+        else
         {
             p_q->p_tail = NULL;
         }
 
-        retval = p_q->p_head->p_data;
-        p_remove = p_q->p_head;
-        p_q->p_head = p_remove->p_next;
-
-        if (NULL != p_q->p_head)
-            p_q->p_head->p_previous = NULL;
-        else
-            p_q->p_tail = NULL;
-    }
-
-    if (NULL != p_remove)
-    {
         free(p_remove);
         p_q->size -= 1;
     }

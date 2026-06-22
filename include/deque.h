@@ -70,9 +70,9 @@ void *deque_pop_front(deque_t *p_q);
 int deque_enqueue_back(deque_t *p_q, void *p_data);
 
 /**
- * @brief Dequeue data from the back of the deque. O(1)
+ * @brief Dequeue data from the front of the deque. O(1)
  *
- * Removes the back element and returns its data pointer to the caller,
+ * Removes the front element and returns its data pointer to the caller,
  * who is then responsible for managing that memory.
  *
  * @param[in] p_q  Deque to dequeue from. Must be non-NULL.
