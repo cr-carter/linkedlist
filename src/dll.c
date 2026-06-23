@@ -148,6 +148,7 @@ void dll_destroy(dll_t **pp_list, dll_del_f del_func)
             if (NULL != del_func)
             {
                 del_func(p_delete->p_data);
+                p_delete = NULL;
             }
 
             free(p_delete);

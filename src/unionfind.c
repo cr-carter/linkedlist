@@ -25,7 +25,7 @@ element_t *unionfind_find_root(element_t *p_element)
         return p_root;
     }
 
-    element_t *p_root = p_element;
+    p_root = p_element;
 
     while (p_root != p_root->p_parent)
     {
@@ -37,9 +37,8 @@ element_t *unionfind_find_root(element_t *p_element)
 
 element_t *unionfind_merge(element_t *p_left, element_t *p_right)
 {
-
-    element_t *root_left = find(p_left);
-    element_t *root_right = find(p_right);
+    element_t *root_left = unionfind_find_root(p_left);
+    element_t *root_right = unionfind_find_root(p_right);
     element_t *newroot = root_left;
 
     if ((NULL == root_left) || (NULL == root_right))
@@ -84,8 +83,8 @@ EXIT_FUNC:
 bool unionfind_is_connected(element_t *p_left, element_t *p_right)
 {
     bool retval = false;
-    element_t *p_left_root = find(p_left);
-    element_t *p_right_root = find(p_right);
+    element_t *p_left_root = unionfind_find_root(p_left);
+    element_t *p_right_root = unionfind_find_root(p_right);
 
     if ((NULL != p_left_root) && (NULL != p_right_root) && (p_left_root == p_right_root))
     {

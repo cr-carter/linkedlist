@@ -50,7 +50,7 @@ static node_t *static_create_node(void *p_data, node_t *p_parent);
 static node_t *static_insert_data(compare_fn compare, node_t *p_current, void *p_data);
 
 // Static search functions
-static node_t *static_find_node(compare_fn compare, node_t *p_current, void *p_key);
+static node_t *static_find_node(compare_fn compare, node_t *p_current, const void *p_key);
 static node_t *static_min_node(node_t *p_current);
 static node_t *static_max_node(node_t *p_current);
 
@@ -280,6 +280,7 @@ bool avl_remove(tree_t *p_tree, void *p_key)
 
     static_destroy_node(p_tree, &p_delete_me);
     p_tree->size--;
+    retval = true;
 
     if (NULL != p_start)
     {
@@ -443,7 +444,7 @@ EXIT_FUNC:
  *
  * @return Pointer to the matching internal node, or NULL if not found.
  */
-static node_t *static_find_node(compare_fn compare, node_t *p_current, void *p_key)
+static node_t *static_find_node(compare_fn compare, node_t *p_current, const void *p_key)
 {
     node_t *p_retval = NULL;
 
@@ -480,7 +481,7 @@ EXIT_FUNC:
 /**
  * @brief Finds the node with the minimum value in the given subtree.
  *
- * Traverses strictly along the left child pointers until the leafmost left node is reached.
+ * Traverses strictly along the left child pointers until the leftmost left node is reached.
  *
  * @param p_current The root of the subtree to search.
  *
@@ -506,7 +507,7 @@ static node_t *static_min_node(node_t *p_current)
 /**
  * @brief Finds the node with the maximum value in the given subtree.
  *
- * Traverses strictly along the right child pointers until the leafmost right node is reached.
+ * Traverses strictly along the right child pointers until the rightmost right node is reached.
  *
  * @param p_current The root of the subtree to search.
  *
