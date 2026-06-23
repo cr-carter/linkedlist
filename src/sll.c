@@ -37,7 +37,7 @@ int sll_insert_head(sll_t *p_list, void *p_data)
         node_t *p_new_head = static_create_node(p_data);
         if (NULL != p_new_head)
         {
-            node_link_head(p_list, p_new_head);
+            static_node_link_head(p_list, p_new_head);
             p_list->size += 1;
             retval = 1;
         }
@@ -55,7 +55,7 @@ int sll_insert_tail(sll_t *p_list, void *p_data)
         node_t *p_new_tail = static_create_node(p_data);
         if (NULL != p_new_tail)
         {
-            node_link_tail(p_list, p_new_tail);
+            static_node_link_tail(p_list, p_new_tail);
             p_list->size += 1;
             retval = 1;
         }
@@ -79,11 +79,11 @@ int sll_insert_at(sll_t *p_list, void *p_data, int index)
 
         if (index <= 0)
         {
-            node_link_head(p_list, p_new_insert);
+            static_node_link_head(p_list, p_new_insert);
         }
         else if (index >= p_list->size)
         {
-            node_link_tail(p_list, p_new_insert);
+            static_node_link_tail(p_list, p_new_insert);
         }
         else
         {
