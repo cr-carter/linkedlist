@@ -72,8 +72,8 @@ tree_t *bst_create_tree(compare_fn compare, destroy_fn destroy);
  * @brief Inserts data into the binary search tree.
  *
  * Creates a new node containing the specified data and inserts it into
- * the appropriate location according to BST ordering rules. Duplicate data is will not be stored in the tree, and the
- * tree will not take ownership of the data.
+ * the appropriate location according to BST ordering rules. Duplicate data will not be stored in the tree, and
+ * ownership will remain with the caller.
  *
  * @param p_tree Pointer to the tree.
  * @param p_data Pointer to user data to insert. The tree will own and free @p p_data
@@ -147,9 +147,12 @@ size_t bst_size_of_tree(tree_t *p_tree);
  *
  * A tree is considered empty when it contains no nodes.
  *
- * @param p_tree Pointer to the tree.
+ * @param p_tree Pointer to the tree. Must not be NULL.
  *
  * @return true if the tree contains no nodes, false otherwise.
+ *
+ * @note A return of false does not differentiate between a non-empty tree and being passed an invalid pointer. Both
+ * will return false, and the caller must verify that a valid tree pointer was passed.
  */
 bool bst_is_empty(tree_t *p_tree);
 

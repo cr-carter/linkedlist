@@ -226,12 +226,10 @@ bool bst_delete_node(tree_t *p_tree, void *p_key)
     {
         static_transplant(p_tree, p_delete_me, p_delete_me->p_right);
     }
-
     else if (NULL == p_delete_me->p_right)
     {
         static_transplant(p_tree, p_delete_me, p_delete_me->p_left);
     }
-
     else
     {
         node_t *p_replace_with = static_max_node(p_delete_me->p_left);
@@ -330,6 +328,11 @@ static node_t *static_insert_data(compare_fn compare, node_t *p_current, void *p
 {
     node_t *p_retval = NULL;
 
+    if ((NULL == compare) || (NULL == p_current) || (NULL == p_data))
+    {
+        goto EXIT_FUNC;
+    }
+
     int comparison = compare(p_current->p_data, p_data);
 
     // Case for data already in tree
@@ -344,7 +347,12 @@ static node_t *static_insert_data(compare_fn compare, node_t *p_current, void *p
         if (NULL == p_current->p_left)
         {
             p_retval = static_create_node(p_data, p_current);
-            p_current->p_left = p_retval;
+
+            if (NULL != p_retval)
+            {
+                p_current->p_left = p_retval;
+            }
+
             goto EXIT_FUNC;
         }
         else
@@ -360,7 +368,12 @@ static node_t *static_insert_data(compare_fn compare, node_t *p_current, void *p
         if (NULL == p_current->p_right)
         {
             p_retval = static_create_node(p_data, p_current);
-            p_current->p_right = p_retval;
+
+            if (NULL != p_retval)
+            {
+                p_current->p_right = p_retval;
+            }
+
             goto EXIT_FUNC;
         }
         else
