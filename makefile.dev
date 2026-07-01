@@ -1,0 +1,70 @@
+.PHONY: run release asan tidy cppcheck format
+
+# TO-DO
+# make doxygen
+# auto configure doxygen document
+# additional file needed
+
+# Additional Tool Variables needed only for ops
+CLANG_FORMAT ?= clang-format
+CLANG_TIDY   ?= clang-tidy
+CPPCHECK     ?= cppcheck
+
+# ##############################
+# Local Execution & Profiling
+# ##############################
+
+run: all
+	./$(TARGET)
+
+release:
+	@$(MAKE) all
+
+asan: CFLAGS = $(filter-out $(STACK_USAGE), $(STD_CFLAGS)) -ggdb -O0 -fsanitize=address,undefined,leak \
+                -fno-omit-frame-pointer -fsanitize=shift,integer-divide-by-zero,bounds
+asan: LDFLAGS += -fsanitize=address,undefined,leak -fsanitize=shift,integer-divide-by-zero,bounds
+asan: BUILD_SUBDIR = asan
+asan: TARGET_SUFFIX = _asan
+asan: all
+
+# ##############################
+# Static analysis and formatting
+#
+# Additional settings and commands for tidy, cppcheck, and format
+# ##############################
+
+TIDY_CHECKS := -*,\
+    readability-*,\
+    -readability-braces-around-statements,\
+    -readability-magic-numbers, \
+    performance-*,\
+    bugprone-*,\
+    -bugprone-easily-swappable-parameters, \
+    clang-analyzer-*,\
+    cert-*,\
+    cppcoreguidelines-init-variables,\
+    misc-*,\
+    modernize-*,\
+    -modernize-use-trailing-return-type
+
+TIDY_FLAGS := --checks='$(TIDY_CHECKS)' \
+    --warnings-as-errors='*' \
+    -- $(filter-out $(STACK_USAGE), $(CFLAGS)) $(INCLUDES)
+
+tidy:
+	$(CLANG_TIDY) $(ALL_SRC) $(TEST_DIR)/*.c $(TIDY_FLAGS)
+
+cppcheck:
+	@echo "==> Running cppcheck..."
+	$(CPPCHECK) --enable=all --inconclusive --std=c99 \
+	    --suppress=missingIncludeSystem $(ALL_SRC) $(wildcard $(TEST_DIR)/*.c) $(INCLUDES)
+
+ALL_HEADERS := \
+    $(wildcard $(PUB_INC_DIR)/*.h) \
+    $(wildcard $(PRI_INC_DIR)/*.h) \
+    $(wildcard $(TEST_DIR)/*.h)
+
+format:
+	$(CLANG_FORMAT) -i $(ALL_SRC) $(ALL_HEADERS)
+
+# End of makefile.dev
