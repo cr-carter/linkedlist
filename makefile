@@ -1,88 +1,144 @@
-.PHONY: all check clean run tidy asan  cppcheck format debug profile
-.DEFAULT_GOAL ?= all
+.PHONY: all check clean run tidy asan cppcheck format debug profile release
+.DEFAULT_GOAL := all
 
-# Program name
-PROGRAM := linkedlist
+# ##############################
+# Project configurations
+#
+# These are the main configuration that will be used in the makefile. 
+# The program name, the source of the main file, the tools used (compiler, archiver, formatter, etc),
+# the directory names, the profile settings (release, debug, asan, profile),
+# the source files, and the object paths are all defined here.
+# ##############################
 
-# Set stack size
-STACK = 512
+PROGRAM_NAME := main
+STACK = 256
+MAIN := main.c
 
-# Compiler and flags
 CC := gcc
-CFLAGS := -Wall -Werror -Wextra -Wpedantic -Waggregate-return -Wwrite-strings -Wvla -Wfloat-equal -Winline -Wconversion -Wshadow -std=c99 -Wstack-usage=$(STACK)
-LDFLAGS := 
+AR := ar
+ARFLAGS := rcs
+MKDIR_P := mkdir -p
+STD_CFLAGS := -Wall -Werror -Wextra -Wpedantic -Waggregate-return -Wwrite-strings -Wvla -Wfloat-equal -Winline -Wconversion -Wshadow -std=c99 -Wstack-usage=$(STACK)
+LDFLAGS := -L./$(LIB_DIR) 
 
 # Tool variables
 CLANG_FORMAT ?= clang-format
 CLANG_TIDY   ?= clang-tidy
 CPPCHECK     ?= cppcheck
-
-# Directories
+ 
+# Directory structure
 SRC_DIR := src
-INC_DIR := include
+PUB_INC_DIR := include
+PRI_INC_DIR := $(SRC_DIR)/include
 TEST_DIR := test
-UNITY_DIR := test/unity
+UNITY_DIR := $(TEST_DIR)/unity
 OBJ_DIR := obj
+LIB_DIR := lib
 
-# Target and additional defaults
-TARGET := $(PROGRAM)
-SRC_FILES := $(wildcard $(SRC_DIR)/*.c)
+# Profile-specific flags handling (Prevents stale build caches)
+PROFILE ?= release
+ifeq ($(PROFILE), release)
+	CFLAGS  := $(STD_CFLAGS) -O2 -DNDEBUG
+	BUILD_SUBDIR := release
+else ifeq ($(PROFILE), debug)
+	CFLAGS  := $(STD_CFLAGS) -ggdb -O0 -DDEBUG -D_FORTIFY_SOURCE=2
+	BUILD_SUBDIR := debug
+else ifeq ($(PROFILE), asan)
+	CFLAGS := $(filter-out -Wstack-usage=$(STACK), $(STD_CFLAGS)) -ggdb -O0 -fsanitize=address,undefined,leak \
+               -fno-omit-frame-pointer -fsanitize=shift,integer-divide-by-zero,bounds
+	LDFLAGS += -fsanitize=address,undefined,leak -fsanitize=shift,integer-divide-by-zero,bounds
+	BUILD_SUBDIR := asan
+else ifeq ($(PROFILE), profile)
+	CFLAGS  := $(STD_CFLAGS) -O2 -pg
+	LDFLAGS += -pg
+	BUILD_SUBDIR := profile
+endif
+
+# Source files
+ALL_SRC := $(wildcard $(SRC_DIR)/*.c)
+CORE_SRC := $(SRC_DIR)/$(MAIN)
+PROJECT_SRC := $(filter-out $(CORE_SRC), $(ALL_SRC))
 TEST_SRC := $(UNITY_DIR)/unity.c $(wildcard $(TEST_DIR)/*.c)
-TEST_FILES := $(filter-out $(SRC_DIR)/$(PROGRAM).c,$(SRC_FILES)) $(TEST_SRC)
 
-# Create object file paths
-OBJ_FILES := $(patsubst %.c, $(OBJ_DIR)/%.o, $(SRC_FILES))
-TEST_OBJ := $(patsubst %.c,$(OBJ_DIR)/%.o,$(TEST_FILES))
+# Create object / library paths
+CURRENT_OBJ_DIR := $(OBJ_DIR)/$(BUILD_SUBDIR)
+CORE_OBJ := $(patsubst %.c, $(CURRENT_OBJ_DIR)/%.o, $(CORE_SRC))
+PROJECT_OBJ := $(patsubst %.c, $(CURRENT_OBJ_DIR)/%.o, $(PROJECT_SRC))
+TEST_OBJ := $(patsubst %.c, $(CURRENT_OBJ_DIR)/%.o, $(TEST_SRC))
 
-# Default target
-all: CFLAGS += -O2 -DNDEBUG
+# Combine internal project sources into ONE local static library archive
+PROJECT_A := $(LIB_DIR)/lib$(PROGRAM_NAME)_internal.a
+TARGET    := $(PROGRAM_NAME)
+CPPFLAGS  := -I$(PUB_INC_DIR) -I$(PRI_INC_DIR)
+
+
+# ##############################
+# Project builds
+#
+# These are the steps taken to build the project, regardless of which profile is used.
+# Link internal libraries
+# Compile all needed .c files to .o files
+# Include all dependencies
+# ##############################
+
 all: $(TARGET)
 
-# Include flag
-INCLUDES := -I$(INC_DIR) -I$(UNITY_DIR)
--include $(OBJ_FILES:.o=.d)
+# Link internal library
+$(TARGET): $(CORE_OBJ) $(PROJECT_A)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
-# Create directories
-$(OBJ_DIR):
-	mkdir -p $(OBJ_DIR)
+# Create internal library
+$(PROJECT_A): $(PROJECT_OBJ) | $(LIB_DIR)
+	$(AR) $(ARFLAGS) $@ $^
 
-# Create executable
-$(TARGET): $(OBJ_FILES) 
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+# Compile C source files (App & Lib), also compiles test files
+$(CURRENT_OBJ_DIR)/%.o: %.c
+	$(MKDIR_P) $(dir $@)
+	$(CC) $(CFLAGS) $(CPPFLAGS) -MMD -MP -c $< -o $@
 
-test_$(PROGRAM): $(TEST_OBJ)
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+$(LIB_DIR):
+	$(MKDIR_P) $(LIB_DIR)
 
-# Compile .c to .o
-$(OBJ_DIR)/%.o: %.c | $(OBJ_DIR)
-	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) $(INCLUDES) -MMD -MP -c $< -o $@
+# Include generated dependencies
+-include $(patsubst %.o,%.d,$(CORE_OBJ) $(PROJECT_OBJ) $(TEST_OBJ))
 
-# Additional make options
+# ##############################
+# Quality, test, and profile
+#
+# Command oo run each make option
+# (run, release, debug, asan, profile, check, clean)
+# ##############################
 
-profile: CFLAGS += -pg
-profile: LDFLAGS += -pg
-profile: TARGET := profile_$(TARGET)
-profile: $(TARGET)
-
-debug: CFLAGS := $(filter-out -DNDEBUG, $(CFLAGS))
-debug: CFLAGS := $(filter-out -O2, $(CFLAGS))
-debug: CFLAGS += -ggdb -O0 -DDEBUG -D_FORTIFY_SOURCE=2
-debug: $(TARGET)
-
-run: $(TARGET)
+run: all
 	./$(TARGET)
 
+release:
+	@$(MAKE) PROFILE=release all
 
-check: test_$(PROGRAM)
-	./test_$(PROGRAM)
+debug:
+	@$(MAKE) PROFILE=debug all
+
+asan:
+	@$(MAKE) PROFILE=asan all
+
+profile:
+	@$(MAKE) PROFILE=profile all
+
+check: CPPFLAGS += -I$(UNITY_DIR)
+check: $(PROJECT_A) $(TEST_OBJ)
+	$(CC) $(CFLAGS) $(CPPFLAGS) -o test_$(PROGRAM_NAME) $(TEST_OBJ) $(PROJECT_A) $(LDFLAGS) $(LDLIBS)
+	./test_$(PROGRAM_NAME)
 
 clean:
-	$(RM) -r $(OBJ_DIR)
-	$(RM) $(PROGRAM) test/test_$(PROGRAM)
-	$(RM) test_$(PROGRAM)
+	$(RM) -r $(OBJ_DIR) $(PROJECT_A)
+	$(RM) $(PROGRAM_NAME) test_$(PROGRAM_NAME) gmon.out
 
-# Tidy
+# ##############################
+# Static analysis and formatting
+#
+# Additional settings and commands for tidy, cppcheck, and format
+# ##############################
+
 TIDY_CHECKS := -*,\
     readability-*,\
 	-readability-braces-around-statements,\
@@ -100,45 +156,25 @@ TIDY_CHECKS := -*,\
 
 TIDY_FLAGS := --checks='$(TIDY_CHECKS)' \
     --warnings-as-errors='*' \
-    -- $(filter-out -Wstack-usage=$(STACK), $(CFLAGS)) -I$(INC_DIR)
+    -- $(filter-out -Wstack-usage=$(STACK), $(CFLAGS)) $(CPPFLAGS)
 
 tidy:
-	$(CLANG_TIDY) $(SRC_FILES) $(TIDY_FLAGS)
-
-# asan
-asan: clean
-asan: CFLAGS := $(filter-out -O2, $(CFLAGS))
-asan: CFLAGS := $(filter-out -Wstack-usage=$(STACK), $(CFLAGS))
-asan: CFLAGS += -ggdb -O0 -fsanitize=address,undefined,leak -fno-omit-frame-pointer -fsanitize=shift,integer-divide-by-zero,bounds
-asan: LDFLAGS += -fsanitize=address,undefined,leak -fsanitize=shift,integer-divide-by-zero,bounds
-asan: $(TARGET)
-
-# WILL NOT WORK UNLESS CLANG-17 IS INSTALLED... CANNOT INSTALL ON UBUNTU 22.04.1?
-# # tsan 
-# TSAN_OPTIONS := \
-# 	verbosity=3 \
-# 	halt_on_error=0 \
-# 	history_size=7 \
-# 	report_signal_unsafe=1 \
-# 	report_odr_violation=1 \
-# 	second_deadlock_stack=1 \
-# 	print_stacktrace=1
-
-# tsan: CFLAGS += -g3 -O1 -fsanitize=thread -fno-omit-frame-pointer -fno-optimize-sibling-calls -Wframe-larger-than=512
-# tsan: CFLAGS := $(filter-out -Wstack-usage=512,$(CFLAGS))
-# tsan: LDFLAGS += -fsanitize=thread
-# tsan: $(TARGET)
-# 	TSAN_OPTIONS=$(TSAN_OPTIONS) ./$(TARGET)
+	$(CLANG_TIDY) $(ALL_SRC) $(TEST_DIR)/*.c $(TIDY_FLAGS)
 
 
 # cppcheck
 cppcheck:
 	@echo "==> Running cppcheck..."
 	$(CPPCHECK) --enable=all --inconclusive --std=c99 \
-		--suppress=missingIncludeSystem $(SRC_FILES) $(INCLUDES)
+		--suppress=missingIncludeSystem $(ALL_SRC) $(wildcard $(TEST_DIR)/*.c) $(CPPFLAGS)
 
 # format
+ALL_HEADERS := \
+    $(wildcard $(PUB_INC_DIR)/*.h) \
+    $(wildcard $(PRI_INC_DIR)/*.h) \
+    $(wildcard $(TEST_DIR)/*.h)
+
 format:
-	$(CLANG_FORMAT) -i $(SRC_FILES) $(wildcard $(INC_DIR)/*.h)
+	$(CLANG_FORMAT) -i $(ALL_SRC) $(ALL_HEADERS)
 
 # End of makefile #
