@@ -18,14 +18,11 @@ run: all
 	./$(TARGET)
 
 release:
-	@$(MAKE) all
+	@$(MAKE) CFLAGS="$(STD_CFLAGS) -DNDEBUG" BUILD_SUBDIR=release TARGET_SUFFIX= all
 
-asan: CFLAGS = $(filter-out $(STACK_USAGE), $(STD_CFLAGS)) -ggdb -O0 -fsanitize=address,undefined,leak \
-                -fno-omit-frame-pointer -fsanitize=shift,integer-divide-by-zero,bounds
-asan: LDFLAGS += -fsanitize=address,undefined,leak -fsanitize=shift,integer-divide-by-zero,bounds
-asan: BUILD_SUBDIR = asan
-asan: TARGET_SUFFIX = _asan
-asan: all
+asan:
+	@$(MAKE) CFLAGS="$(filter-out $(STACK_USAGE), $(STD_CFLAGS)) -ggdb -O0 -fsanitize=address,undefined,leak -fno-omit-frame-pointer -fsanitize=shift,integer-divide-by-zero,bounds" LDFLAGS+="-fsanitize=address,undefined,leak -fsanitize=shift,integer-divide-by-zero,bounds" BUILD_SUBDIR=asan TARGET_SUFFIX=_asan all
+
 
 # ##############################
 # Static analysis and formatting

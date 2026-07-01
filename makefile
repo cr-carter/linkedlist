@@ -91,13 +91,15 @@ $(CURRENT_OBJ_DIR)/%.o: %.c
 debug: CFLAGS  = $(STD_CFLAGS) -ggdb -DDEBUG -D_FORTIFY_SOURCE=2
 debug: BUILD_SUBDIR = debug
 debug: TARGET_SUFFIX = _debug
-debug: all
+debug:
+	@$(MAKE) CFLAGS="$(STD_CFLAGS) -ggdb -DDEBUG -D_FORTIFY_SOURCE=2" BUILD_SUBDIR=debug TARGET_SUFFIX=_debug all
 
 profile: CFLAGS  = $(STD_CFLAGS) -pg
 profile: LDFLAGS += -pg
 profile: BUILD_SUBDIR = profile
 profile: TARGET_SUFFIX = _profile
-profile: all
+profile:
+	@$(MAKE) CFLAGS="$(STD_CFLAGS) -pg" LDFLAGS+="-pg" BUILD_SUBDIR=profile TARGET_SUFFIX=_profile all
 
 check: INCLUDES += -I$(UNITY_DIR)
 check: $(LIB_OBJ) $(TEST_OBJ)
