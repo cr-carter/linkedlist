@@ -6,8 +6,7 @@
 #
 # These are the main configuration that will be used in the makefile. 
 # The program name, the source of the main file, the tools used (compiler, archiver, formatter, etc),
-# the directory names, the profile settings (release, debug, asan, profile),
-# the source files, and the object paths are all defined here.
+# the directory names, the source files, and the object paths are all defined here.
 # ##############################
 
 # Modify program_name (binary file name) for project
@@ -62,15 +61,15 @@ INCLUDES  = -I$(PUB_INC_DIR) -I$(PRI_INC_DIR)
 # ##############################
 # Project builds
 #
-# These are the steps taken to build the project, regardless of which profile is used.
-# Link internal libraries
+# These are the steps taken to build the project, regardless of which mode is used.
+# Link libraries
 # Compile all needed .c files to .o files
 # Include all dependencies
 # ##############################
 
 all: $(TARGET)
 
-# Link internal library
+# Link libraries
 $(TARGET): $(ALL_LIB_OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
