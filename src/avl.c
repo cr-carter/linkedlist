@@ -60,7 +60,7 @@ static void static_destroy_all_nodes(tree_t *p_tree, node_t **pp_current);
 static void static_transplant(tree_t *p_tree, node_t *p_delete, node_t *p_replace);
 
 // Static print functions
-static void static_show_trunks(trunk_t *p);
+static void static_show_trunks(trunk_t *p_trunk);
 static void print_tree_recursive(node_t *p_node, trunk_t *prev, bool is_left, print_fn print);
 
 // Static AVL functions
@@ -416,7 +416,7 @@ static node_t *static_insert_data(compare_fn compare, node_t *p_current, void *p
     }
 
     // Case for data greater than current node (insert to right)
-    else if (0 > comparison)
+    else
     {
         if (NULL == p_current->p_right)
         {
@@ -605,15 +605,15 @@ static void static_transplant(tree_t *p_tree, node_t *p_delete, node_t *p_replac
  *
  * @param p Pointer to the current structural trunk fragment.
  */
-static void static_show_trunks(trunk_t *p)
+static void static_show_trunks(trunk_t *p_trunk)
 {
-    if (p == NULL)
+    if (p_trunk == NULL)
     {
         return;
     }
 
-    static_show_trunks(p->prev);
-    printf("%s", p->str);
+    static_show_trunks(p_trunk->prev);
+    printf("%s", p_trunk->str);
 }
 
 /**

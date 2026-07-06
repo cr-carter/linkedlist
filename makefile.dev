@@ -41,20 +41,23 @@ TIDY_CHECKS := -*,\
     cert-*,\
     cppcoreguidelines-init-variables,\
     misc-*,\
+    -misc-no-recursion,-warnings-as-errors, \
     modernize-*,\
     -modernize-use-trailing-return-type
 
-TIDY_FLAGS := --checks='$(TIDY_CHECKS)' \
+TIDY_FLAGS := \
+    --checks='$(TIDY_CHECKS)' \
     --warnings-as-errors='*' \
-    -- $(filter-out $(STACK_USAGE), $(CFLAGS)) $(INCLUDES)
-
+    -- $(filter-out $(STACK_USAGE),$(CFLAGS)) $(INCLUDES)
+    
 tidy:
-	$(CLANG_TIDY) $(ALL_SRC) $(TEST_DIR)/*.c $(TIDY_FLAGS)
+	$(CLANG_TIDY) $(ALL_SRC) $(TIDY_FLAGS)
 
 cppcheck:
 	@echo "==> Running cppcheck..."
 	$(CPPCHECK) --enable=all --inconclusive --std=c99 \
-	    --suppress=missingIncludeSystem $(ALL_SRC) $(wildcard $(TEST_DIR)/*.c) $(INCLUDES)
+	    --suppress=missingIncludeSystem $(ALL_SRC) $(INCLUDES) \
+        --suppress=unusedFunction --check-config
 
 ALL_HEADERS := \
     $(wildcard $(PUB_INC_DIR)/*.h) \

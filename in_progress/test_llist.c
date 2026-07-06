@@ -1,4 +1,3 @@
-
 #include "llist.h"
 #include "unity.h"
 
@@ -219,15 +218,15 @@ void test_llist_index_of_good(void)
     printf("\nTesting llist_index_of with good values...\n");
 
     llist_t *p_list = llist_create();
-    char *test_data0 = calloc(1, sizeof(test_data0));
-    char *test_data1 = calloc(1, sizeof(test_data1));
-    char *test_data2 = calloc(1, sizeof(test_data2));
-    char *test_data3 = calloc(1, sizeof(test_data3));
+    char *test_data0 = calloc(1, sizeof(*test_data0));
+    char *test_data1 = calloc(1, sizeof(*test_data1));
+    char *test_data2 = calloc(1, sizeof(*test_data2));
+    char *test_data3 = calloc(1, sizeof(*test_data3));
 
-    test_data0 = strcpy(test_data0, "a");
-    test_data1 = strcpy(test_data1, "b");
-    test_data2 = strcpy(test_data2, "c");
-    test_data3 = strcpy(test_data3, "d");
+    test_data0 = strncpy(test_data0, "a", 2);
+    test_data1 = strncpy(test_data1, "b", 2);
+    test_data2 = strncpy(test_data2, "c", 2);
+    test_data3 = strncpy(test_data3, "d", 2);
     // int test_data3 = 3;
     // int test_data0 = 0;
     // int test_data9 = 9;
@@ -287,11 +286,11 @@ void test_llist_index_of_bad(void)
     }
 
     llist_t *p_list = llist_create();
-    char *test_data0 = calloc(1, sizeof(test_data0));
-    char *test_data1 = calloc(1, sizeof(test_data1));
+    char *test_data0 = calloc(1, sizeof(*test_data0));
+    char *test_data1 = calloc(1, sizeof(*test_data1));
 
-    test_data0 = strcpy(test_data0, "a");
-    test_data1 = strcpy(test_data1, "b");
+    strncpy(test_data0, "a", 2);
+    strncpy(test_data1, "b", 2);
 
     test_val = llist_index_of(p_list, (char *)"c", cmp_str);
 
@@ -310,15 +309,15 @@ void test_llist_size_good(void)
     printf("\nTesting llist_size with good values...\n");
 
     llist_t *p_list = llist_create();
-    char *test_data0 = calloc(1, sizeof(test_data0));
-    char *test_data1 = calloc(1, sizeof(test_data1));
-    char *test_data2 = calloc(1, sizeof(test_data2));
-    char *test_data3 = calloc(1, sizeof(test_data3));
+    char *test_data0 = calloc(1, sizeof(*test_data0));
+    char *test_data1 = calloc(1, sizeof(*test_data1));
+    char *test_data2 = calloc(1, sizeof(*test_data2));
+    char *test_data3 = calloc(1, sizeof(*test_data3));
 
-    test_data0 = strcpy(test_data0, "a");
-    test_data1 = strcpy(test_data1, "b");
-    test_data2 = strcpy(test_data2, "c");
-    test_data3 = strcpy(test_data3, "d");
+    test_data0 = strncpy(test_data0, "a", 2);
+    test_data1 = strncpy(test_data1, "b", 2);
+    test_data2 = strncpy(test_data2, "c", 2);
+    test_data3 = strncpy(test_data3, "d", 2);
     // int test_data3 = 3;
     // int test_data0 = 0;
     // int test_data9 = 9;

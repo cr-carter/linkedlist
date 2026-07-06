@@ -96,14 +96,24 @@ int llist_insert_at(llist_t *p_list, void *p_data, int index)
                 {
                     break;
                 }
+
                 p_position = p_position->p_next;
             }
 
-            p_new_insert->p_next = p_position->p_next;
-            p_new_insert->p_previous = p_position;
-            p_position->p_next = p_new_insert;
-            p_new_insert->p_next->p_previous = p_new_insert;
+            if ((NULL != p_position) && (NULL != p_position->p_next))
+            {
+                p_new_insert->p_next = p_position->p_next;
+                p_new_insert->p_previous = p_position;
+                p_position->p_next = p_new_insert;
+                p_new_insert->p_next->p_previous = p_new_insert;
+            }
+            else
+            {
+                free(p_new_insert);
+                goto EXIT_FUNC;
+            }
         }
+
         p_list->size += 1;
         retval = 1;
     }

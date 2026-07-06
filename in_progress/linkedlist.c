@@ -68,22 +68,23 @@ int main(void)
     *test14 = 14;
     *test15 = 15;
 
-    avl_add_node(p_tree, test1);
-    avl_add_node(p_tree, test2);
-    avl_add_node(p_tree, test3);
-    avl_add_node(p_tree, test4);
-    avl_add_node(p_tree, test5);
-    avl_add_node(p_tree, test6);
-    avl_add_node(p_tree, test7);
-    avl_add_node(p_tree, test8);
-    avl_add_node(p_tree, test9);
-    avl_add_node(p_tree, test10);
-    avl_add_node(p_tree, test11);
-    avl_add_node(p_tree, test12);
-    avl_add_node(p_tree, test13);
-    avl_add_node(p_tree, test14);
-    avl_add_node(p_tree, test15);
+    avl_insert(p_tree, test1);
+    avl_insert(p_tree, test2);
+    avl_insert(p_tree, test3);
+    avl_insert(p_tree, test4);
+    avl_insert(p_tree, test5);
+    avl_insert(p_tree, test6);
+    avl_insert(p_tree, test7);
+    avl_insert(p_tree, test8);
+    avl_insert(p_tree, test9);
+    avl_insert(p_tree, test10);
+    avl_insert(p_tree, test11);
+    avl_insert(p_tree, test12);
+    avl_insert(p_tree, test13);
+    avl_insert(p_tree, test14);
+    avl_insert(p_tree, test15);
 
+    printf("#### Adding numbers 1-15 ####\n");
     printf("##### Here is your tree #####\n");
     avl_print(p_tree, print_int);
 
@@ -128,13 +129,30 @@ int main(void)
     avl_post_order(p_tree, print_int);
     printf("\n\n");
 
-    avl_delete_node(p_tree, test15);
-    avl_delete_node(p_tree, test12);
-    avl_delete_node(p_tree, test4);
-    avl_delete_node(p_tree, test3);
-    avl_delete_node(p_tree, test2);
-    avl_delete_node(p_tree, test1);
+    avl_remove(p_tree, test15);
+    printf("## Removing 15 ##\n");
+    avl_print(p_tree, print_int);
 
+    printf("## Removing 12 ##\n");
+    avl_remove(p_tree, test12);
+
+    avl_print(p_tree, print_int);
+    printf("## Removing 14 ##\n");
+    avl_remove(p_tree, test4);
+
+    avl_print(p_tree, print_int);
+    printf("## Removing 13 ##\n");
+    avl_remove(p_tree, test3);
+
+    avl_print(p_tree, print_int);
+    printf("## Removing 2 ##\n");
+    avl_remove(p_tree, test2);
+
+    avl_print(p_tree, print_int);
+    printf("## Removing 1 ##\n");
+    avl_remove(p_tree, test1);
+
+    printf("## Removing 15, 12, 4, 3, 2, 1 ##\n");
     printf("##### Here is modified tree #####\n");
     avl_print(p_tree, print_int);
 
@@ -179,7 +197,6 @@ int main(void)
     avl_post_order(p_tree, print_int);
     printf("\n\n");
 
-    printf("##### Here is modified tree #####\n");
     test15 = calloc(1, sizeof(int));
     test12 = calloc(1, sizeof(int));
     test2 = calloc(1, sizeof(int));
@@ -194,30 +211,29 @@ int main(void)
     *test3 = 3;
     *test1 = 1;
 
-    avl_add_node(p_tree, test15);
-    avl_add_node(p_tree, test12);
-    avl_add_node(p_tree, test2);
-    avl_add_node(p_tree, test4);
-    avl_add_node(p_tree, test3);
-    avl_add_node(p_tree, test1);
+    avl_insert(p_tree, test15);
+    avl_insert(p_tree, test12);
+    avl_insert(p_tree, test2);
+    avl_insert(p_tree, test4);
+    avl_insert(p_tree, test3);
+    avl_insert(p_tree, test1);
 
+    printf("### Adding 15, 12, 2, 4, 3, 1 ###\n");
+    printf("##### Here is modified tree #####\n");
     avl_print(p_tree, print_int);
     puts("\n");
 
-    printf("##### avl_clear() #####\n");
-    avl_clear(p_tree);
-
-    printf("avl_size_of_tree()\nExpected: 0\nActual: ");
+    printf("avl_size_of_tree()\nExpected: 15\nActual: ");
     tree_size = avl_size_of_tree(p_tree);
     printf("%zu\n", tree_size);
     puts("");
 
-    printf("avl_minimum_value()\nExpected: 0\nActual: ");
+    printf("avl_minimum_value()\nExpected: 1\nActual: ");
     min_value = avl_minimum_value(p_tree);
     printf("%i\n", (NULL != min_value) ? *min_value : 0);
     puts("");
 
-    printf("avl_maximum_value()\nExpected: 0\nActual: ");
+    printf("avl_maximum_value()\nExpected: 15\nActual: ");
     max_value = avl_maximum_value(p_tree);
     printf("%i", (NULL != max_value) ? *max_value : 0);
     puts("\n");
@@ -234,5 +250,9 @@ int main(void)
     avl_post_order(p_tree, print_int);
     printf("\n\n");
 
+    printf("##### avl_clear() #####\n");
+    avl_clear(p_tree);
+
     avl_destroy_tree(&p_tree);
 }
+ 

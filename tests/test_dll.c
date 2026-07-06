@@ -7,7 +7,6 @@
 #include <string.h>
 
 /*
-int dll_size(dll_t *p_list)
 void dll_iterate(dll_t *p_list, dll_iter_f iter_f)
 void dll_selection_sort(dll_t *p_list, dll_compar_f cmp_func)
 void dll_insertion_sort(dll_t *p_list, dll_compar_f cmp_func)
@@ -275,16 +274,134 @@ void test_dll_insertion_sort(void)
 void test_dll_iter_create(void)
 {
     printf("\nTesting dll_iter_create...\n");
+    dll_t *p_list = dll_create();
+    int test_data8 = 8;
+    int test_data6 = 6;
+    int test_data7 = 7;
+
+    dll_insert_head(p_list, &test_data7);
+    dll_insert_head(p_list, &test_data6);
+    dll_insert_head(p_list, &test_data8);
+
+    dll_iter_t *p_iter = dll_iter_create(NULL);
+
+    if (NULL != p_iter)
+    {
+        TEST_FAIL();
+    }
+
+    p_iter = dll_iter_create(&p_list);
+
+    if (NULL != p_iter)
+    {
+        TEST_PASS();
+    }
+    else
+    {
+        TEST_FAIL();
+    }
 }
 
 void test_dll_iter_next(void)
 {
     printf("\nTesting dll_iter_next...\n");
+    dll_t *p_list = dll_create();
+    int test_data8 = 8;
+    int test_data6 = 6;
+    int test_data7 = 7;
+
+    dll_insert_head(p_list, &test_data7);
+    dll_insert_head(p_list, &test_data6);
+    dll_insert_head(p_list, &test_data8);
+
+    dll_iter_t *p_iter = dll_iter_create(&p_list);
+
+    if (NULL == p_iter)
+    {
+        TEST_FAIL();
+    }
+
+    void *p_test_iter = dll_iter_next(p_iter);
+
+    if (NULL == p_test_iter)
+    {
+        TEST_FAIL();
+    }
+
+    if (8 == *(int *)p_test_iter)
+    {
+    }
+    else
+    {
+        TEST_FAIL();
+    }
+
+    p_test_iter = dll_iter_next(p_iter);
+
+    if (NULL == p_test_iter)
+    {
+        TEST_FAIL();
+    }
+
+    if (6 == *(int *)p_test_iter)
+    {
+        TEST_PASS();
+    }
+    else
+    {
+        TEST_FAIL();
+    }
 }
 
 void test_dll_iter_prev(void)
 {
     printf("\nTesting dll_iter_prev...\n");
+    dll_t *p_list = dll_create();
+    int test_data8 = 8;
+    int test_data6 = 6;
+    int test_data7 = 7;
+
+    dll_insert_head(p_list, &test_data7);
+    dll_insert_head(p_list, &test_data6);
+    dll_insert_head(p_list, &test_data8);
+
+    dll_iter_t *p_iter = dll_iter_create(&p_list);
+
+    if (NULL == p_iter)
+    {
+        TEST_FAIL();
+    }
+
+    void *p_test_iter = dll_iter_prev(p_iter);
+
+    if (NULL == p_test_iter)
+    {
+        TEST_FAIL();
+    }
+
+    if (7 == *(int *)p_test_iter)
+    {
+    }
+    else
+    {
+        TEST_FAIL();
+    }
+
+    p_test_iter = dll_iter_prev(p_iter);
+
+    if (NULL == p_test_iter)
+    {
+        TEST_FAIL();
+    }
+
+    if (6 == *(int *)p_test_iter)
+    {
+        TEST_PASS();
+    }
+    else
+    {
+        TEST_FAIL();
+    }
 }
 
 void test_dll_iter_data(void)
