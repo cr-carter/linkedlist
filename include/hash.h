@@ -38,7 +38,7 @@ typedef size_t (*hash_func)(const void *p_key);
  *
  * @return 0 if equal, non-zero otherwise.
  */
-typedef int (*comp_func)(const void *p_key1, const void *p_key2);
+typedef int (*key_comp_func)(const void *p_key1, const void *p_key2);
 
 /**
  * @brief Destructor callback for stored keys.
@@ -63,6 +63,16 @@ typedef void (*value_del_func)(void *p_value);
 typedef void (*iter_func)(const void *p_key, void *p_value);
 
 /**
+ * @brief Key duplication callback.
+ *
+ * Makes a copy of a key.
+ *
+ * @param[in] p_key Key to copy.
+ * @return Pointer to the new copy.
+ */
+typedef void *(*key_cpy_func)(const void *p_key);
+
+/**
  * @brief Create a new hash table.
  *
  * @param[in] bucket_count Initial number of buckets.
@@ -71,16 +81,17 @@ typedef void (*iter_func)(const void *p_key, void *p_value);
  *
  * @return New hash table, or NULL on failure.
  */
-hashtable_t *hashtable_create(size_t bucket_count, hash_func hash, comp_func compare);
+hashtable_t *hashtable_create(size_t bucket_count, hash_func hash, key_comp_func key_compare, key_cpy_func key_copy,
+                              key_del_func key_delete);
 
 /**
  * @brief Insert or update a key/value pair.
  *
- * If the key already exists, its associated value is replaced.
+ * If the key already exists, the new value is not stored.
  *
  * @param[in,out] p_ht Hash table.
- * @param[in] p_key Key.
- * @param[in] p_value Value.
+ * @param[in] p_key Key to be copied, caller controls original key.
+ * @param[in] p_value Value to be stored, caller maintains ownership of value.
  *
  * @return 0 on success, 1 on failure, 2 if key is already being used.
  */
@@ -104,7 +115,8 @@ void *hashtable_find(hashtable_t *p_ht, const void *p_key);
  * to the caller.
  *
  * @param[in,out] p_ht Hash table.
- * @param[in] p_key Key to remove.
+ * @param[in] p_key Key to remove. The copy stored in the hashtable will be destroyed, caller maintains ownership of
+ * passed in key.
  *
  * @return Stored value, or NULL if the key is absent.
  */
@@ -113,13 +125,13 @@ void *hashtable_remove(hashtable_t *p_ht, const void *p_key);
 /**
  * @brief Remove every entry from the table.
  *
- * The bucket array remains allocated.
+ * The bucket array remains allocated. This function will destroy all copies of keys stored inside of it, and will
+ * destroy values associated with them if the caller passes a function to destroy the values.
  *
  * @param[in,out] p_ht Hash table.
- * @param[in] key_del Optional key destructor.
  * @param[in] value_del Optional value destructor.
  */
-void hashtable_clear(hashtable_t *p_ht, key_del_func key_del, value_del_func value_del);
+void hashtable_clear(hashtable_t *p_ht, value_del_func value_del);
 
 /**
  * @brief Destroy a hash table.
@@ -134,7 +146,7 @@ void hashtable_clear(hashtable_t *p_ht, key_del_func key_del, value_del_func val
  * @param[in] key_del Optional key destructor.
  * @param[in] value_del Optional value destructor.
  */
-void hashtable_destroy(hashtable_t **pp_ht, key_del_func key_del, value_del_func value_del);
+void hashtable_destroy(hashtable_t **pp_ht, value_del_func value_del);
 
 /**
  * @brief Determine whether a key exists.

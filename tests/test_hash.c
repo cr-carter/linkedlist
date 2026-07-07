@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include "hash.h"
 #include "unity.h"
 
@@ -8,6 +10,7 @@
 
 size_t jenkins_hash(const void *key, size_t len)
 {
+    // Taken from https://en.wikipedia.org/wiki/Jenkins_hash_function
     const uint8_t *data = key;
     size_t hash = 0;
 
@@ -35,7 +38,7 @@ int int_compare(const void *val_a, const void *val_b)
 {
     uint32_t int_a = *(const uint32_t *)val_a;
     uint32_t int_b = *(const uint32_t *)val_b;
-    return int_a != int_b;
+    return (int_a > int_b) - (int_a < int_b);
 }
 
 void int_iter(const void *p_key, void *p_value)
@@ -43,22 +46,41 @@ void int_iter(const void *p_key, void *p_value)
     printf("%i: %c\n", *(int *)p_key, *(char *)p_value);
 }
 
+void *int_copy(const void *p_key)
+{
+    void *p_copy = calloc(1, sizeof(int));
+    memcpy(p_copy, p_key, sizeof(int));
+    return p_copy;
+}
+
+void int_delete(void *p_key)
+{
+    free(p_key);
+}
+
 size_t char_hash(const void *key)
 {
-    char key_as_int = *(const char *)key;
-    return jenkins_hash(&key_as_int, sizeof(key_as_int));
+    return jenkins_hash(key, strlen(key));
 }
 
 int char_compare(const void *val_a, const void *val_b)
 {
-    char char_a = *(const char *)val_a;
-    char char_b = *(const char *)val_b;
-    return char_a != char_b;
+    return strcmp(val_a, val_b);
 }
 
 void char_iter(const void *p_key, void *p_value)
 {
-    printf("%c: %i\n", *(char *)p_key, *(int *)p_value);
+    printf("%s: %i\n", (char *)p_key, *(int *)p_value);
+}
+
+void *char_copy(const void *p_key)
+{
+    return strdup(p_key);
+}
+
+void char_delete(void *p_key)
+{
+    free(p_key);
 }
 
 // hashtable_t *hashtable_create(size_t bucket_count, hash_func hash, comp_func compare);
@@ -73,7 +95,7 @@ void char_iter(const void *p_key, void *p_value)
 
 void test_int_hashtable(void)
 {
-    hashtable_t *p_ht = hashtable_create(5, int_hash, int_compare);
+    hashtable_t *p_ht = hashtable_create(5, int_hash, int_compare, int_copy, int_delete);
 
     TEST_ASSERT_NOT_NULL(p_ht);
 
@@ -168,7 +190,7 @@ void test_int_hashtable(void)
     hashtable_iterate(p_ht, int_iter);
 
     printf("Check clearing...\n");
-    hashtable_clear(p_ht, NULL, NULL);
+    hashtable_clear(p_ht, NULL);
     TEST_ASSERT_EQUAL(0, hashtable_size(p_ht));
     check = hashtable_contains(p_ht, int_1);
     TEST_ASSERT_FALSE(check);
@@ -181,13 +203,41 @@ void test_int_hashtable(void)
     TEST_ASSERT_NOT_NULL(p_ht);
 
     printf("Check destroy...\n");
-    hashtable_destroy(&p_ht, NULL, NULL);
+    hashtable_destroy(&p_ht, NULL);
     TEST_ASSERT_NULL(p_ht);
+
+    free(int_1);
+    free(int_2);
+    free(int_3);
+    free(int_4);
+    free(int_5);
+    free(int_6);
+    free(int_7);
+    free(int_8);
+    free(int_9);
+    free(int_10);
+    free(int_11);
+    free(int_12);
+    free(int_13);
+
+    free(char_1);
+    free(char_2);
+    free(char_3);
+    free(char_4);
+    free(char_5);
+    free(char_6);
+    free(char_7);
+    free(char_8);
+    free(char_9);
+    free(char_10);
+    free(char_11);
+    free(char_12);
+    free(char_13);
 }
 
 void test_char_hashtable(void)
 {
-    hashtable_t *p_ht = hashtable_create(5, char_hash, char_compare);
+    hashtable_t *p_ht = hashtable_create(5, char_hash, char_compare, char_copy, char_delete);
 
     TEST_ASSERT_NOT_NULL(p_ht);
 
@@ -219,33 +269,19 @@ void test_char_hashtable(void)
     *int_12 = 12;
     *int_13 = 13;
 
-    char *char_1 = calloc(1, sizeof(*char_1));
-    char *char_2 = calloc(1, sizeof(*char_2));
-    char *char_3 = calloc(1, sizeof(*char_3));
-    char *char_4 = calloc(1, sizeof(*char_4));
-    char *char_5 = calloc(1, sizeof(*char_5));
-    char *char_6 = calloc(1, sizeof(*char_6));
-    char *char_7 = calloc(1, sizeof(*char_7));
-    char *char_8 = calloc(1, sizeof(*char_8));
-    char *char_9 = calloc(1, sizeof(*char_9));
-    char *char_10 = calloc(1, sizeof(*char_10));
-    char *char_11 = calloc(1, sizeof(*char_11));
-    char *char_12 = calloc(1, sizeof(*char_12));
-    char *char_13 = calloc(1, sizeof(*char_13));
-
-    *char_1 = 'a';
-    *char_2 = 'b';
-    *char_3 = 'c';
-    *char_4 = 'd';
-    *char_5 = 'e';
-    *char_6 = 'f';
-    *char_7 = 'g';
-    *char_8 = 'h';
-    *char_9 = 'i';
-    *char_10 = 'j';
-    *char_11 = 'k';
-    *char_12 = 'l';
-    *char_13 = 'm';
+    char *char_1 = (char *)"apple";
+    char *char_2 = (char *)"banana";
+    char *char_3 = (char *)"cherry";
+    char *char_4 = (char *)"dog";
+    char *char_5 = (char *)"elephant";
+    char *char_6 = (char *)"fish";
+    char *char_7 = (char *)"golf";
+    char *char_8 = (char *)"hockey";
+    char *char_9 = (char *)"igloo";
+    char *char_10 = (char *)"jump";
+    char *char_11 = (char *)"koala";
+    char *char_12 = (char *)"logic";
+    char *char_13 = (char *)"money";
 
     hashtable_insert(p_ht, char_1, int_1);
     hashtable_insert(p_ht, char_2, int_2);
@@ -282,7 +318,7 @@ void test_char_hashtable(void)
     hashtable_iterate(p_ht, char_iter);
 
     printf("Check clearing...\n");
-    hashtable_clear(p_ht, NULL, NULL);
+    hashtable_clear(p_ht, NULL);
     TEST_ASSERT_EQUAL(0, hashtable_size(p_ht));
     check = hashtable_contains(p_ht, char_1);
     TEST_ASSERT_FALSE(check);
@@ -295,8 +331,36 @@ void test_char_hashtable(void)
     TEST_ASSERT_NOT_NULL(p_ht);
 
     printf("Check destroy...\n");
-    hashtable_destroy(&p_ht, NULL, NULL);
+    hashtable_destroy(&p_ht, NULL);
     TEST_ASSERT_NULL(p_ht);
+
+    free(int_1);
+    free(int_2);
+    free(int_3);
+    free(int_4);
+    free(int_5);
+    free(int_6);
+    free(int_7);
+    free(int_8);
+    free(int_9);
+    free(int_10);
+    free(int_11);
+    free(int_12);
+    free(int_13);
+
+    // free(char_1);
+    // free(char_2);
+    // free(char_3);
+    // free(char_4);
+    // free(char_5);
+    // free(char_6);
+    // free(char_7);
+    // free(char_8);
+    // free(char_9);
+    // free(char_10);
+    // free(char_11);
+    // free(char_12);
+    // free(char_13);
 }
 
 /* End of test_hash.c */

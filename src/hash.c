@@ -13,7 +13,7 @@ typedef struct node node_t;
 
 struct node
 {
-    const void *p_key;
+    void *p_key;
     void *p_value;
     node_t *p_next;
     node_t *p_previous;
@@ -31,7 +31,9 @@ struct hashtable
     size_t bucket_count;
     size_t size;
     hash_func hash;
-    comp_func compare;
+    key_comp_func key_compare;
+    key_cpy_func key_copy;
+    key_del_func key_delete;
 };
 
 /* Static functions */
@@ -48,12 +50,13 @@ static int static_insert_without_resizing(hashtable_t *p_ht, const void *p_key, 
 
 /* Public functions*/
 
-hashtable_t *hashtable_create(size_t bucket_count, hash_func hash, comp_func compare)
+hashtable_t *hashtable_create(size_t bucket_count, hash_func hash, key_comp_func key_compare, key_cpy_func key_copy,
+                              key_del_func key_del)
 {
     hashtable_t *retval = NULL;
 
     // Validate input, allocate table
-    if ((NULL == hash) || (NULL == compare) || (0 == bucket_count))
+    if ((NULL == hash) || (NULL == key_compare) || (0 == bucket_count) || (NULL == key_copy) || (NULL == key_del))
     {
         return NULL;
     }
@@ -93,7 +96,9 @@ hashtable_t *hashtable_create(size_t bucket_count, hash_func hash, comp_func com
     }
 
     retval->bucket_count = bucket_count;
-    retval->compare = compare;
+    retval->key_compare = key_compare;
+    retval->key_copy = key_copy;
+    retval->key_delete = key_del;
     retval->hash = hash;
 
     return retval;
@@ -105,12 +110,23 @@ int hashtable_insert(hashtable_t *p_ht, const void *p_key, void *p_value)
     {
         return EXIT_FAILURE;
     }
+    void *p_copy = p_ht->key_copy(p_key);
 
-    int retval = static_insert_without_resizing(p_ht, p_key, p_value);
+    if (NULL == p_copy)
+    {
+        return EXIT_FAILURE;
+    }
+
+    int retval = static_insert_without_resizing(p_ht, p_copy, p_value);
 
     if (EXIT_SUCCESS == retval)
     {
         static_resize_if_needed(p_ht);
+    }
+
+    if (2 == retval)
+    {
+        p_ht->key_delete(p_copy);
     }
 
     return retval;
@@ -176,6 +192,7 @@ void *hashtable_remove(hashtable_t *p_ht, const void *p_key)
         p_node->p_previous->p_next = p_node->p_next;
         p_node->p_next->p_previous = p_node->p_previous;
     }
+    p_ht->key_delete(p_node->p_key);
 
     free(p_node);
 
@@ -184,7 +201,7 @@ void *hashtable_remove(hashtable_t *p_ht, const void *p_key)
     return p_value;
 }
 
-void hashtable_destroy(hashtable_t **pp_ht, key_del_func key_del, value_del_func value_del)
+void hashtable_destroy(hashtable_t **pp_ht, value_del_func value_del)
 {
     if ((NULL == pp_ht) || (NULL == *pp_ht))
     {
@@ -193,7 +210,7 @@ void hashtable_destroy(hashtable_t **pp_ht, key_del_func key_del, value_del_func
 
     hashtable_t *p_ht = *pp_ht;
 
-    hashtable_clear(p_ht, key_del, value_del);
+    hashtable_clear(p_ht, value_del);
 
     for (size_t index = 0; index < p_ht->bucket_count; index++)
     {
@@ -218,7 +235,7 @@ size_t hashtable_size(const hashtable_t *p_ht)
     return p_ht->size;
 }
 
-void hashtable_clear(hashtable_t *p_ht, key_del_func key_del, value_del_func value_del)
+void hashtable_clear(hashtable_t *p_ht, value_del_func value_del)
 {
     if (NULL == p_ht)
     {
@@ -235,10 +252,7 @@ void hashtable_clear(hashtable_t *p_ht, key_del_func key_del, value_del_func val
         {
             node_t *p_next = p_current->p_next;
 
-            if (NULL != key_del)
-            {
-                key_del((void *)p_current->p_key);
-            }
+            p_ht->key_delete((void *)p_current->p_key);
 
             if (NULL != value_del)
             {
@@ -307,7 +321,7 @@ static node_t *static_find_node(hashtable_t *p_ht, const void *p_key)
 
     for (node_t *p_current = p_bucket->head; NULL != p_current; p_current = p_current->p_next)
     {
-        if (0 == p_ht->compare(p_current->p_key, p_key))
+        if (0 == p_ht->key_compare(p_current->p_key, p_key))
         {
             p_retval = p_current;
             break;

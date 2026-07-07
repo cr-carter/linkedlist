@@ -23,7 +23,7 @@ LDLIBS := $(addprefix -l,$(LIBS))
 
 CC ?= gcc
 CC_STD ?= -std=c99
-STACK_USAGE = -Wstack-usage=256
+STACK_USAGE = -Wstack-usage=512
 STD_CFLAGS := -Wall -Werror -Wextra -Wpedantic -Waggregate-return -Wwrite-strings -Wvla -Wfloat-equal -Winline -Wconversion -Wshadow $(CC_STD) $(STACK_USAGE)
 
 # Directory structure
