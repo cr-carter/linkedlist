@@ -1,6 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 
-#include "hash.h"
+#include "hash_generic.h"
 #include "unity.h"
 
 #include <stdbool.h>

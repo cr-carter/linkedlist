@@ -1,88 +1,31 @@
 /**
- * @file hash.h
+ * @file hash_string.h
  * @author Chase Carter
  */
 
-#ifndef HASH_H
-#define HASH_H
+#ifndef HASH_STRING_H
+#define HASH_STRING_H
 
 #include <stdbool.h>
 #include <stddef.h>
 
-/**
- * @brief Opaque hash table type.
- *
- * All implementation details are hidden from the caller.
- * Keys and values are stored as generic pointers.
- */
-typedef struct hashtable hashtable_t;
+typedef struct hashtable string_hashtable_t;
 
-/**
- * @brief Hash function callback.
- *
- * Computes a hash value for a key.
- *
- * @param[in] p_key Key to hash.
- *
- * @return Hash value.
- */
-typedef size_t (*hash_func)(const void *p_key);
+typedef size_t (*string_hash_func)(const char *);
 
-/**
- * @brief Key comparison callback.
- *
- * Compares two keys.
- *
- * @param[in] p_key1 First key.
- * @param[in] p_key2 Second key.
- *
- * @return 0 if equal, non-zero otherwise.
- */
-typedef int (*key_comp_func)(const void *p_key1, const void *p_key2);
+typedef void (*string_value_del_func)(void *);
 
-/**
- * @brief Destructor callback for stored keys.
- *
- * @param[in] p_key Key to destroy.
- */
-typedef void (*key_del_func)(void *p_key);
-
-/**
- * @brief Destructor callback for stored values.
- *
- * @param[in] p_value Value to destroy.
- */
-typedef void (*value_del_func)(void *p_value);
-
-/**
- * @brief Callback used by hashtable_iterate().
- *
- * @param[in] p_key User key.
- * @param[in] p_value User value.
- */
-typedef void (*iter_func)(const void *p_key, void *p_value);
-
-/**
- * @brief Key duplication callback.
- *
- * Makes a copy of a key.
- *
- * @param[in] p_key Key to copy.
- * @return Pointer to the new copy.
- */
-typedef void *(*key_cpy_func)(const void *p_key);
+typedef void (*string_iter_func)(const char *, void *);
 
 /**
  * @brief Create a new hash table.
  *
  * @param[in] bucket_count Initial number of buckets.
  * @param[in] hash Hash function.
- * @param[in] compare Key comparison function.
  *
  * @return New hash table, or NULL on failure.
  */
-hashtable_t *hashtable_create(size_t bucket_count, hash_func hash, key_comp_func key_compare, key_cpy_func key_copy,
-                              key_del_func key_delete);
+string_hashtable_t *hash_string_create(size_t bucket_count, string_hash_func hash);
 
 /**
  * @brief Insert or update a key/value pair.
@@ -95,7 +38,7 @@ hashtable_t *hashtable_create(size_t bucket_count, hash_func hash, key_comp_func
  *
  * @return 0 on success, 1 on failure, 2 if key is already being used.
  */
-int hashtable_insert(hashtable_t *p_ht, const void *p_key, void *p_value);
+int hash_string_insert(string_hashtable_t *p_ht, const char *p_key, void *p_value);
 
 /**
  * @brief Find the value associated with a key.
@@ -105,7 +48,7 @@ int hashtable_insert(hashtable_t *p_ht, const void *p_key, void *p_value);
  *
  * @return Associated value, or NULL if not found.
  */
-void *hashtable_find(hashtable_t *p_ht, const void *p_key);
+void *hash_string_find(string_hashtable_t *p_ht, const char *p_key);
 
 /**
  * @brief Remove a key/value pair.
@@ -120,7 +63,7 @@ void *hashtable_find(hashtable_t *p_ht, const void *p_key);
  *
  * @return Stored value, or NULL if the key is absent.
  */
-void *hashtable_remove(hashtable_t *p_ht, const void *p_key);
+void *hash_string_remove(string_hashtable_t *p_ht, const char *p_key);
 
 /**
  * @brief Remove every entry from the table.
@@ -131,7 +74,7 @@ void *hashtable_remove(hashtable_t *p_ht, const void *p_key);
  * @param[in,out] p_ht Hash table.
  * @param[in] value_del Optional value destructor.
  */
-void hashtable_clear(hashtable_t *p_ht, value_del_func value_del);
+void hash_string_clear(string_hashtable_t *p_ht, string_value_del_func value_del);
 
 /**
  * @brief Destroy a hash table.
@@ -146,7 +89,7 @@ void hashtable_clear(hashtable_t *p_ht, value_del_func value_del);
  * @param[in] key_del Optional key destructor.
  * @param[in] value_del Optional value destructor.
  */
-void hashtable_destroy(hashtable_t **pp_ht, value_del_func value_del);
+void hash_string_destroy(string_hashtable_t **pp_ht, string_value_del_func value_del);
 
 /**
  * @brief Determine whether a key exists.
@@ -157,7 +100,7 @@ void hashtable_destroy(hashtable_t **pp_ht, value_del_func value_del);
  * @retval true Key exists.
  * @retval false Key does not exist.
  */
-bool hashtable_contains(hashtable_t *p_ht, const void *p_key);
+bool hash_string_contains(string_hashtable_t *p_ht, const char *p_key);
 
 /**
  * @brief Return the number of stored entries.
@@ -166,7 +109,7 @@ bool hashtable_contains(hashtable_t *p_ht, const void *p_key);
  *
  * @return Number of key/value pairs.
  */
-size_t hashtable_size(const hashtable_t *p_ht);
+size_t hash_string_size(const string_hashtable_t *p_ht);
 
 /**
  * @brief Visit every key/value pair in the table.
@@ -176,6 +119,6 @@ size_t hashtable_size(const hashtable_t *p_ht);
  * @param[in] p_ht Hash table.
  * @param[in] iter Callback invoked for each entry.
  */
-void hashtable_iterate(hashtable_t *p_ht, iter_func iter);
+void hash_string_iterate(string_hashtable_t *p_ht, string_iter_func iter);
 
-#endif /* HASH_H */
+#endif /* HASH_STRING_H */

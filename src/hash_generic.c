@@ -1,9 +1,9 @@
 /**
- * @file hash.c
+ * @file hash_generic.c
  * @author Chase Carter
  */
 
-#include "hash.h"
+#include "hash_generic.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -124,7 +124,7 @@ int hashtable_insert(hashtable_t *p_ht, const void *p_key, void *p_value)
         static_resize_if_needed(p_ht);
     }
 
-    if (2 == retval)
+    if (EXIT_SUCCESS != retval)
     {
         p_ht->key_delete(p_copy);
     }
@@ -527,4 +527,4 @@ static int static_insert_without_resizing(hashtable_t *p_ht, const void *p_key, 
     return EXIT_SUCCESS;
 }
 
-/* End of file hash.c */
+/* End of file hash_generic.c */
