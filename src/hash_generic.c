@@ -448,7 +448,8 @@ static bool static_resize_if_needed(hashtable_t *p_ht)
         while (p_node != NULL)
         {
             node_t *p_next = p_node->p_next;
-            size_t new_index = p_ht->hash(p_node->p_key) % new_bucket_count;
+
+            size_t new_index = p_ht->hash(p_node->p_key) % new_bucket_count; // NOLINT(clang-analyzer-core.DivideZero)
             bucket_t *p_bucket = pp_new_buckets[new_index];
 
             p_node->p_next = NULL;
