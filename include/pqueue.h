@@ -1,35 +1,17 @@
 #include <stdlib.h>
 
-struct node
-{
-    int priority;
-    void *data;
-};
-
-struct pqueue
-{
-    struct node *p_nodes;
-    size_t nmemb;
-    size_t capacity;
-};
+typedef struct pqueue pqueue_t;
 
 typedef void(p_delete_f)(void *p_data);
 
-static void heapify_up(struct pqueue *p_priorq, int index);
+pqueue_t *pqueue_create();
 
-static void heapify_down(struct pqueue *p_priorq);
+void pqueue_destroy(pqueue_t **p_priorq, p_delete_f p_delete);
 
-static struct pqueue *resize(struct pqueue *p_priorq);
+int pqueue_insert(pqueue_t *p_priorq, size_t priority, void *p_data);
 
-struct pqueue *create();
+void *pqueue_remove(pqueue_t *p_priorq, size_t *priority);
 
-void destroy(struct pqueue **p_priorq, p_delete_f p_delete);
+void *pqueue_peek(pqueue_t *p_priorq, size_t *priority);
 
-int insert(struct pqueue *p_priorq, int priority, void *p_data);
-
-void *remove(struct pqueue *p_priorq, int *priority);
-
-void *peek(struct pqueue *p_priorq, int *priority);
-
-// pqueue
-// qsort
+/* End of file pqueue.h */
