@@ -136,4 +136,27 @@ void test_pqueue_single(void)
 
 void test_pqueue_bad(void)
 {
+    pqueue_destroy(NULL, NULL);
+    pqueue_peek(NULL, NULL);
+    pqueue_insert(NULL, 5, NULL);
+    pqueue_remove(NULL, NULL);
+
+    pqueue_t *p_pq = pqueue_create();
+
+    if (NULL == p_pq)
+    {
+        printf("Something is wrong\n");
+    }
+
+    pqueue_remove(p_pq, NULL);
+    pqueue_remove(p_pq, NULL);
+    pqueue_remove(p_pq, NULL);
+    void *check = pqueue_peek(p_pq, NULL);
+    check = pqueue_peek(p_pq, NULL);
+    if (NULL != check)
+    {
+        printf("Something is wrong\n");
+    }
+
+    pqueue_destroy(&p_pq, NULL);
 }

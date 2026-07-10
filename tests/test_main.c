@@ -31,6 +31,9 @@ void test_pqueue_all_zeros(void);
 void test_pqueue_single(void);
 void test_pqueue_bad(void);
 
+// test_trie.c
+void test_trie(void);
+
 void setUp(void)
 {
 }
@@ -68,6 +71,7 @@ int main(void)
         // RUN_TEST(test_quicksort_all_zeros);
         // RUN_TEST(test_quicksort_single);
         // RUN_TEST(test_quicksort_bad);
+
         // printf("Test mergesort\n");
         // RUN_TEST(test_mergesort_random);
         // RUN_TEST(test_mergesort_sorted);
@@ -88,6 +92,12 @@ int main(void)
         RUN_TEST(test_pqueue_all_zeros);
         RUN_TEST(test_pqueue_single);
         RUN_TEST(test_pqueue_bad);
+    }
+
+    // test_trie.c
+    {
+        printf("\n\n##############################\nTesting trie.c functions\n##############################\n");
+        RUN_TEST(test_trie);
     }
 
     UNITY_END();
