@@ -64,6 +64,14 @@ void test_trie(void)
         TEST_FAIL();
     }
 
+    trie_delete(p_trie, (char *)"ant");
+
+    check = trie_search(p_trie, (char *)"ant");
+    if (EXIT_FAILURE != check)
+    {
+        TEST_FAIL();
+    }
+
     check = trie_search(p_trie, (char *)"dot");
     if (EXIT_FAILURE != check)
     {

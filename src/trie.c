@@ -34,7 +34,9 @@ static tnode_t *static_create_node()
 
 static void static_recursive_print(tnode_t *temp, char *sub, size_t depth);
 
-static void static_recursive_delete(tnode_t **temp);
+static int static_recursive_delete(tnode_t **temp, char *sub, size_t length, size_t depth);
+
+static void static_recursive_destroy(tnode_t **temp);
 
 static int static_validate_word(char *text);
 
@@ -85,12 +87,22 @@ int trie_insert(trie_t *p_trie, char *text)
         if (NULL == temp->next_letter[letter_index])
         {
             temp->next_letter[letter_index] = static_create_node();
+
+            if (temp->next_letter[letter_index] == NULL)
+            {
+                return EXIT_FAILURE;
+            }
         }
 
         temp = temp->next_letter[letter_index];
     }
 
-    temp->end = true;
+    if (false == temp->end)
+    {
+        temp->end = true;
+        p_trie->word_count++;
+    }
+
     return EXIT_SUCCESS;
 }
 
@@ -163,25 +175,21 @@ int trie_delete(trie_t *p_trie, char *text)
     }
 
     size_t word_len = strlen(text);
+    size_t index = (size_t)(text[0] - 'a');
 
-    tnode_t *temp = p_trie->root;
-
-    size_t letter_index = 0;
-
-    for (size_t index = 0; index < word_len; index++)
+    if (NULL == p_trie->root->next_letter[index])
     {
-        letter_index = (size_t)text[index] - (size_t)'a';
-
-        if (NULL == temp->next_letter[letter_index])
-        {
-            return EXIT_FAILURE;
-        }
-
-        temp = temp->next_letter[letter_index];
+        return EXIT_FAILURE;
     }
 
-    if (true == temp->end)
+    check = static_recursive_delete(&p_trie->root->next_letter[index], text, word_len, 1);
+
+    if (EXIT_SUCCESS == check)
     {
+        free(p_trie->root->next_letter[index]);
+        p_trie->root->next_letter[index] = NULL;
+
+        p_trie->word_count--;
         return EXIT_SUCCESS;
     }
 
@@ -196,14 +204,60 @@ void trie_destroy(trie_t *p_trie)
     }
 
     tnode_t *temp = p_trie->root;
-    static_recursive_delete(&temp);
+    static_recursive_destroy(&temp);
 
     free(p_trie);
 }
 
 /* Static functions */
 
-static void static_recursive_delete(tnode_t **temp)
+static int static_recursive_delete(tnode_t **temp, char *sub, size_t length, size_t depth)
+{
+    if ((NULL == temp) || (NULL == *temp) || (NULL == sub) || (depth > length))
+    {
+        return EXIT_FAILURE;
+    }
+
+    // End of word
+    if (depth == length)
+    {
+        if (false == (*temp)->end)
+        {
+            return EXIT_FAILURE;
+        }
+
+        (*temp)->end = false;
+    }
+    else
+    {
+        size_t letter_index = (size_t)sub[depth] - (size_t)'a';
+
+        int check = static_recursive_delete(&(*temp)->next_letter[letter_index], sub, length, depth + 1);
+
+        if (EXIT_SUCCESS == check)
+        {
+            free((*temp)->next_letter[letter_index]);
+            (*temp)->next_letter[letter_index] = NULL;
+        }
+    }
+
+    if (true == (*temp)->end)
+    {
+        return EXIT_FAILURE;
+    }
+
+    for (size_t index = 0; index < ALPHA_RANGE; index++)
+    {
+        if (NULL != (*temp)->next_letter[index])
+        {
+            return EXIT_FAILURE;
+        }
+    }
+
+    return EXIT_SUCCESS;
+}
+
+static void static_recursive_destroy(tnode_t **temp)
 {
     if ((NULL == temp) || (NULL == *temp))
     {
@@ -214,7 +268,7 @@ static void static_recursive_delete(tnode_t **temp)
     {
         if (NULL != (*temp)->next_letter[index])
         {
-            static_recursive_delete(&(*temp)->next_letter[index]);
+            static_recursive_destroy(&(*temp)->next_letter[index]);
         }
     }
 
@@ -261,16 +315,13 @@ static int static_validate_word(char *text)
 
     for (size_t index = 0; index < word_len; index++)
     {
-        if ((text[index] < 'a') || (text[index] > 'z'))
+        if ((text[index] >= 'A') && (text[index] <= 'Z'))
         {
-            if ((text[index] < 'A') || (text[index] > 'Z'))
-            {
-                text[index] += 32;
-            }
-            else
-            {
-                return EXIT_FAILURE;
-            }
+            text[index] += ('a' - 'A');
+        }
+        else if ((text[index] < 'a') || (text[index] > 'z'))
+        {
+            return EXIT_FAILURE;
         }
     }
 
