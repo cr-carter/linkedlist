@@ -349,6 +349,8 @@ int dll_iter_reset(dll_iter_t *p_iter)
     return retval;
 }
 
+/* STATIC FUNCTIONS */
+
 static node_t *static_create_node(void *p_data)
 {
     node_t *p_node = calloc(1, sizeof(*p_node));
