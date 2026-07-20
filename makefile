@@ -102,7 +102,7 @@ profile:
 
 check: INCLUDES += -I$(UNITY_DIR)
 check: $(LIB_OBJ) $(TEST_OBJ)
-	$(CC) $(CFLAGS) $(INCLUDES) -o test_$(PROGRAM_NAME) $(TEST_OBJ) $(LIB_OBJ) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(CFLAGS) -g -O0 $(INCLUDES) -o test_$(PROGRAM_NAME) $(TEST_OBJ) $(LIB_OBJ) $(LDFLAGS) $(LDLIBS)
 	./test_$(PROGRAM_NAME)
 
 clean:

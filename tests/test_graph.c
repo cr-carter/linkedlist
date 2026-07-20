@@ -65,23 +65,45 @@ void test_graph_search(void)
            "   /|    |\\      |\\\n"
            "  4 |    2 \\     | 9\n"
            " /  |    |  \\    |  \\\n"
-           "a   11   e   4   14   g\n"
+           "a   11   e   4   14   i\n"
            " \\  |   /|    \\  |  /\n"
            "  6 | 7  6     \\ | 100\n"
            "   \\|/   |      \\|/\n"
            "    c- 1-f - 2 - h\n");
 
-    // will be deleted
-    graph_add_edge(p_graph, "j", "i", 9);
-    graph_add_edge(p_graph, "i", "j", 9);
+    printf("\n");
 
     // Should not run
     graph_add_edge(p_graph, "j", "k", 9);
     graph_add_edge(p_graph, "m", "l", 9);
 
-    graph_remove_vertex(p_graph, "j");
+    // graph_remove_vertex(p_graph, "j");
 
-    graph_dijkstras_search(p_graph, "a");
+    djikstra_results_t *p_results = graph_djikstras_search(p_graph, "a", "j");
+
+    if (NULL != p_results)
+    {
+
+        printf("weight: %i, node_count: %zu\n", p_results->weight, p_results->node_count);
+        printf("path: ");
+
+        for (size_t index = 0; index < p_results->node_count; index++)
+        {
+            printf("%s -> ", p_results->pp_nodes[index]);
+        }
+        printf("\n\n\n");
+
+        for (size_t index = 0; index < p_results->node_count; index++)
+        {
+            free((void *)p_results->pp_nodes[index]);
+        }
+
+        free(p_results->pp_nodes);
+        free(p_results);
+    }
+
+    // This works
+    // graph_djikstras_print_all(p_graph, "a");
 
     graph_destroy_graph(&p_graph);
 }

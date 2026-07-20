@@ -6,6 +6,13 @@
 
 typedef struct graph graph_t;
 
+typedef struct djikstra_results
+{
+    int weight;
+    size_t node_count;
+    char **pp_nodes;
+} djikstra_results_t;
+
 /**
  * @brief Creates and initializes an empty graph.
  *
@@ -125,7 +132,9 @@ int graph_set_edge_value(graph_t *p_graph, const char *p_from, const char *p_to,
  */
 void graph_print_graph(graph_t *p_graph);
 
-void graph_dijkstras_search(graph_t *p_graph, const char *p_start);
+djikstra_results_t *graph_djikstras_search(graph_t *p_graph, const char *p_start, const char *p_end);
+
+void graph_djikstras_print_all(graph_t *p_graph, const char *p_start);
 
 #endif // GRAPH_H
 

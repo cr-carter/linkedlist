@@ -11,6 +11,7 @@
 
 #include "graph.h"
 
+#include <assert.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -98,9 +99,7 @@ void graph_destroy_graph(graph_t **p_graph)
 
     for (size_t index = 0; index < (*p_graph)->num_vertices; index++)
     {
-        vertex_t *p_temp_vertex = (*p_graph)->pp_vertices[index];
-
-        static_destroy_vertex(&p_temp_vertex);
+        static_destroy_vertex(&(*p_graph)->pp_vertices[index]);
     }
 
     free((*p_graph)->pp_vertices);
@@ -161,6 +160,8 @@ int graph_remove_vertex(graph_t *p_graph, const char *p_name)
 
     static_destroy_edges_containing(p_graph, p_name);
 
+    p_vertex = p_graph->pp_vertices[index];
+
     size_t last = p_graph->num_vertices - 1;
 
     if (index != last)
@@ -173,6 +174,11 @@ int graph_remove_vertex(graph_t *p_graph, const char *p_name)
     p_graph->num_vertices -= 1;
 
     static_destroy_vertex(&p_vertex);
+
+    for (size_t idx = 0; idx < p_graph->num_vertices; idx++)
+    {
+        p_graph->pp_vertices[idx]->index = idx;
+    }
 
     return EXIT_SUCCESS;
 }
@@ -305,11 +311,11 @@ int graph_remove_edge(graph_t *p_graph, const char *p_from, const char *p_to, in
             (p_vertex->p_edges[index]->weight == weight))
         {
             free(p_vertex->p_edges[index]);
-            p_vertex->p_edges[index] = p_vertex->p_edges[p_vertex->num_edges - 1];
-
-            p_vertex->p_edges[p_vertex->num_edges - 1] = NULL;
-
             p_vertex->num_edges -= 1;
+            p_vertex->p_edges[index] = p_vertex->p_edges[p_vertex->num_edges];
+
+            p_vertex->p_edges[p_vertex->num_edges] = NULL;
+
             return EXIT_SUCCESS;
         }
         else
@@ -417,10 +423,162 @@ void graph_print_graph(graph_t *p_graph)
     }
 }
 
-void graph_dijkstras_search(graph_t *p_graph, const char *p_start)
+djikstra_results_t *graph_djikstras_search(graph_t *p_graph, const char *p_start, const char *p_end)
+{
+    if ((NULL == p_graph) || (NULL == p_start) || (NULL == p_end))
+    {
+        return NULL;
+    }
+
+    size_t idx = 0;
+    vertex_t *p_start_vertex = static_find_vertex(p_graph, p_start, &idx);
+
+    if (NULL == p_start_vertex)
+    {
+        return NULL;
+    }
+
+    size_t end_index = 0;
+    if (NULL != p_end)
+    {
+        vertex_t *p_end_vertex = static_find_vertex(p_graph, p_end, &end_index);
+
+        if (NULL == p_end_vertex)
+        {
+            return NULL;
+        }
+    }
+
+    path_t *p_paths = calloc(p_graph->num_vertices, sizeof(*p_paths));
+
+    if (NULL == p_paths)
+    {
+        return NULL;
+    }
+
+    for (size_t index = 0; index < p_graph->num_vertices; index++)
+    {
+        p_paths[index].p_current = p_graph->pp_vertices[index];
+        p_paths[index].weight = INT_MAX;
+    }
+
+    p_paths[idx].weight = 0;
+
+    for (;;)
+    {
+        path_t *p_current = NULL;
+
+        for (size_t index = 0; index < p_graph->num_vertices; index++)
+        {
+            if ((1 == p_paths[index].visited) || (INT_MAX == p_paths[index].weight))
+            {
+                continue;
+            }
+
+            if ((NULL == p_current) || (p_paths[index].weight < p_current->weight))
+            {
+                p_current = &p_paths[index];
+            }
+        }
+
+        if (NULL == p_current)
+        {
+            break;
+        }
+
+        p_current->visited = 1;
+
+        for (size_t index = 0; index < p_current->p_current->num_edges; index++)
+        {
+            edge_t *p_edge = p_current->p_current->p_edges[index];
+
+            assert(NULL != p_edge);
+            assert(NULL != p_edge->p_destination);
+            assert(p_edge->p_destination->index < p_graph->num_vertices);
+            path_t *p_neighbor = &p_paths[p_edge->p_destination->index];
+
+            if (1 == p_neighbor->visited)
+            {
+                continue;
+            }
+
+            int new_weight = p_current->weight + p_edge->weight;
+
+            if (new_weight < p_neighbor->weight)
+            {
+                p_neighbor->weight = new_weight;
+                p_neighbor->previous = p_current;
+            }
+        }
+    }
+
+    if (INT_MAX == p_paths[end_index].weight)
+    {
+        free(p_paths);
+        return NULL;
+    }
+
+    djikstra_results_t *p_results = calloc(1, sizeof(*p_results));
+
+    if (NULL == p_results)
+    {
+        free(p_paths);
+        return NULL;
+    }
+
+    p_results->weight = p_paths[end_index].weight;
+
+    size_t node_count = 0;
+    path_t *p_current = &p_paths[end_index];
+
+    for (path_t *p_temp = p_current; NULL != p_temp; p_temp = p_temp->previous)
+    {
+        node_count++;
+    }
+
+    if (0 == node_count)
+    {
+        free(p_results);
+        free(p_paths);
+        return NULL;
+    }
+
+    p_results->pp_nodes = calloc(node_count, sizeof(*p_results->pp_nodes));
+
+    if (NULL == p_results->pp_nodes)
+    {
+        free(p_results);
+        free(p_paths);
+        return NULL;
+    }
+
+    p_results->node_count = node_count;
+
+    p_current = &p_paths[end_index];
+
+    for (size_t index = node_count; index > 0; index--)
+    {
+        p_results->pp_nodes[index - 1] = strdup(p_current->p_current->p_name);
+        p_current = p_current->previous;
+    }
+
+    free(p_paths);
+
+    return p_results;
+}
+
+void graph_djikstras_print_all(graph_t *p_graph, const char *p_start)
 {
     if ((NULL == p_graph) || (NULL == p_start))
     {
+        return;
+    }
+
+    size_t idx = 0;
+    vertex_t *p_temp = static_find_vertex(p_graph, p_start, &idx);
+    if (NULL == p_temp)
+    {
+
         return;
     }
 
@@ -435,14 +593,6 @@ void graph_dijkstras_search(graph_t *p_graph, const char *p_start)
     {
         p_paths[index].p_current = p_graph->pp_vertices[index];
         p_paths[index].weight = INT_MAX;
-    }
-
-    size_t idx = 0;
-    vertex_t *p_temp = static_find_vertex(p_graph, p_start, &idx);
-    if (NULL == p_temp)
-    {
-        free(p_paths);
-        return;
     }
 
     p_paths[idx].weight = 0;
@@ -759,9 +909,10 @@ static void static_destroy_edges_containing(graph_t *p_graph, const char *p_name
             if (0 == strcmp(p_name, p_vertex->p_edges[jindex]->p_destination->p_name))
             {
                 free(p_vertex->p_edges[jindex]);
-
-                p_vertex->p_edges[jindex] = p_vertex->p_edges[p_vertex->num_edges - 1];
                 p_vertex->num_edges -= 1;
+
+                p_vertex->p_edges[jindex] = p_vertex->p_edges[p_vertex->num_edges];
+                p_vertex->p_edges[p_vertex->num_edges] = NULL;
             }
             else
             {
