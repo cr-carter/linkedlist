@@ -6,29 +6,28 @@
  * @brief Functions to implement a graph and search with breadth first search
  */
 
-/**
- * TO-DO
- * this currently allows multiple edges between same destinations. should this be changed?
- */
+// NOLINTNEXTLINE (bugprone-reserved-identifier,cert-dcl37-c,cert-dcl51-cpp,-warnings-as-errors)
+#define _POSIX_C_SOURCE 200809L
 
+#include "graph.h"
+
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-// NOLINTNEXTLINE (bugprone-reserved-identifier,cert-dcl37-c,cert-dcl51-cpp,-warnings-as-errors)
-#define _POSIX_C_SOURCE 200809L
-
 #define INIT_VERTICES_COUNT 10
 
-typedef struct graph graph_t;
 typedef struct vertex vertex_t;
 typedef struct edge edge_t;
+typedef struct path path_t;
 
 struct vertex
 {
+    size_t num_edges;
+    size_t index;
+    size_t capacity;
     char *p_name;
-    int num_edges;
-    int capacity;
     edge_t **p_edges;
 };
 
@@ -40,9 +39,17 @@ struct edge
 
 struct graph
 {
-    int num_vertices;
-    int capacity;
+    size_t num_vertices;
+    size_t capacity;
     vertex_t **pp_vertices;
+};
+
+struct path
+{
+    int weight;
+    int visited;
+    vertex_t *p_current;
+    path_t *previous;
 };
 
 /* STATIC FUNCTIONS */
@@ -51,7 +58,7 @@ struct graph
 static vertex_t *static_create_vertex(const char *p_name);
 static int static_resize_graph(graph_t *p_graph);
 static void static_destroy_vertex(vertex_t **pp_vertex);
-static vertex_t *static_find_vertex(graph_t *p_graph, const char *p_name, int *p_index);
+static vertex_t *static_find_vertex(graph_t *p_graph, const char *p_name, size_t *p_index);
 
 /* Helpers for edge management */
 static edge_t *static_create_edge(vertex_t *p_destination, int weight);
@@ -60,7 +67,7 @@ static void static_destroy_edges_containing(graph_t *p_graph, const char *p_name
 
 /* PUBLIC FUNCTIONS */
 
-graph_t *create_graph()
+graph_t *graph_create_graph()
 {
     graph_t *p_graph = calloc(1, sizeof(*p_graph));
 
@@ -82,14 +89,14 @@ graph_t *create_graph()
     return p_graph;
 }
 
-void destroy_graph(graph_t **p_graph)
+void graph_destroy_graph(graph_t **p_graph)
 {
     if ((NULL == p_graph) || (NULL == *p_graph))
     {
         return;
     }
 
-    for (int index = 0; index < (*p_graph)->num_vertices; index++)
+    for (size_t index = 0; index < (*p_graph)->num_vertices; index++)
     {
         vertex_t *p_temp_vertex = (*p_graph)->pp_vertices[index];
 
@@ -101,7 +108,7 @@ void destroy_graph(graph_t **p_graph)
     *p_graph = NULL;
 }
 
-int add_vertex(graph_t *p_graph, const char *p_name)
+int graph_add_vertex(graph_t *p_graph, const char *p_name)
 {
     if ((NULL == p_graph) || (NULL == p_name))
     {
@@ -130,19 +137,20 @@ int add_vertex(graph_t *p_graph, const char *p_name)
         return EXIT_FAILURE;
     }
 
+    p_new_vertex->index = p_graph->num_vertices;
     p_graph->pp_vertices[p_graph->num_vertices] = p_new_vertex;
     p_graph->num_vertices += 1;
 
     return EXIT_SUCCESS;
 }
 
-int remove_vertex(graph_t *p_graph, const char *p_name)
+int graph_remove_vertex(graph_t *p_graph, const char *p_name)
 {
     if ((NULL == p_graph) || (NULL == p_name))
     {
         return EXIT_FAILURE;
     }
-    int index = -1;
+    size_t index = 0;
 
     vertex_t *p_vertex = static_find_vertex(p_graph, p_name, &index);
 
@@ -153,21 +161,23 @@ int remove_vertex(graph_t *p_graph, const char *p_name)
 
     static_destroy_edges_containing(p_graph, p_name);
 
-    static_destroy_vertex(&p_vertex);
+    size_t last = p_graph->num_vertices - 1;
 
-    if (NULL != p_vertex)
+    if (index != last)
     {
-        return EXIT_FAILURE;
+        p_graph->pp_vertices[index] = p_graph->pp_vertices[last];
+        p_graph->pp_vertices[index]->index = index;
     }
 
-    p_graph->pp_vertices[index] = p_graph->pp_vertices[p_graph->num_vertices - 1];
-    p_graph->pp_vertices[p_graph->num_vertices - 1] = NULL;
+    p_graph->pp_vertices[last] = NULL;
     p_graph->num_vertices -= 1;
+
+    static_destroy_vertex(&p_vertex);
 
     return EXIT_SUCCESS;
 }
 
-int rename_vertex(graph_t *p_graph, const char *p_current_name, const char *p_new_name)
+int graph_rename_vertex(graph_t *p_graph, const char *p_current_name, const char *p_new_name)
 {
     if ((NULL == p_graph) || (NULL == p_current_name) || (NULL == p_new_name))
     {
@@ -199,7 +209,7 @@ int rename_vertex(graph_t *p_graph, const char *p_current_name, const char *p_ne
     return EXIT_SUCCESS;
 }
 
-const char **get_neighbors(graph_t *p_graph, const char *p_name, int *p_count)
+const char **graph_get_neighbors(graph_t *p_graph, const char *p_name, size_t *p_count)
 {
     if ((NULL == p_graph) || (NULL == p_name) || (NULL == p_count))
     {
@@ -222,7 +232,7 @@ const char **get_neighbors(graph_t *p_graph, const char *p_name, int *p_count)
 
     const char **pp_neighbors = calloc(p_vertex->num_edges, sizeof(*pp_neighbors));
 
-    for (int index = 0; index < p_vertex->num_edges; index++)
+    for (size_t index = 0; index < p_vertex->num_edges; index++)
     {
         pp_neighbors[index] = p_vertex->p_edges[index]->p_destination->p_name;
     }
@@ -230,7 +240,7 @@ const char **get_neighbors(graph_t *p_graph, const char *p_name, int *p_count)
     return pp_neighbors;
 }
 
-int add_edge(graph_t *p_graph, const char *p_from, const char *p_to, int weight)
+int graph_add_edge(graph_t *p_graph, const char *p_from, const char *p_to, int weight)
 {
     if ((NULL == p_graph) || (NULL == p_from) || (NULL == p_to))
     {
@@ -274,7 +284,7 @@ int add_edge(graph_t *p_graph, const char *p_from, const char *p_to, int weight)
     return EXIT_SUCCESS;
 }
 
-int remove_edge(graph_t *p_graph, const char *p_from, const char *p_to, int weight)
+int graph_remove_edge(graph_t *p_graph, const char *p_from, const char *p_to, int weight)
 {
 
     if ((NULL == p_graph) || (NULL == p_from) || (NULL == p_to))
@@ -289,7 +299,7 @@ int remove_edge(graph_t *p_graph, const char *p_from, const char *p_to, int weig
         return EXIT_FAILURE;
     }
 
-    for (int index = 0; index < p_vertex->num_edges;)
+    for (size_t index = 0; index < p_vertex->num_edges;)
     {
         if ((0 == strcmp(p_to, p_vertex->p_edges[index]->p_destination->p_name)) &&
             (p_vertex->p_edges[index]->weight == weight))
@@ -311,7 +321,7 @@ int remove_edge(graph_t *p_graph, const char *p_from, const char *p_to, int weig
     return EXIT_FAILURE;
 }
 
-int *get_edge_weight(graph_t *p_graph, const char *p_from, const char *p_to, int *p_count)
+int *graph_get_edge_weight(graph_t *p_graph, const char *p_from, const char *p_to, int *p_count)
 {
     if ((NULL == p_graph) || (NULL == p_from) || (NULL == p_to) || (NULL == p_count))
     {
@@ -331,7 +341,7 @@ int *get_edge_weight(graph_t *p_graph, const char *p_from, const char *p_to, int
 
     *p_count = 0;
 
-    for (int index = 0; index < p_vertex->num_edges; index++)
+    for (size_t index = 0; index < p_vertex->num_edges; index++)
     {
         if (0 == strcmp(p_to, p_edges[index]->p_destination->p_name))
         {
@@ -349,7 +359,7 @@ int *get_edge_weight(graph_t *p_graph, const char *p_from, const char *p_to, int
     return p_weights;
 }
 
-int set_edge_value(graph_t *p_graph, const char *p_from, const char *p_to, int old_weight, int new_weight)
+int graph_set_edge_value(graph_t *p_graph, const char *p_from, const char *p_to, int old_weight, int new_weight)
 {
     if ((NULL == p_graph) || (NULL == p_from) || (NULL == p_to))
     {
@@ -372,7 +382,7 @@ int set_edge_value(graph_t *p_graph, const char *p_from, const char *p_to, int o
 
     edge_t **p_edge = p_location->p_edges;
 
-    for (int index = 0; index < p_location->num_edges; index++)
+    for (size_t index = 0; index < p_location->num_edges; index++)
     {
         if ((0 == strcmp(p_to, p_edge[index]->p_destination->p_name)) && (old_weight == p_edge[index]->weight))
         {
@@ -384,20 +394,20 @@ int set_edge_value(graph_t *p_graph, const char *p_from, const char *p_to, int o
     return EXIT_FAILURE;
 }
 
-void print_graph(graph_t *p_graph)
+void graph_print_graph(graph_t *p_graph)
 {
     if (NULL == p_graph)
     {
         return;
     }
 
-    for (int index = 0; index < p_graph->num_vertices; index++)
+    for (size_t index = 0; index < p_graph->num_vertices; index++)
     {
         vertex_t *p_vertex = p_graph->pp_vertices[index];
 
         printf("%s: ", p_vertex->p_name);
 
-        for (int jindex = 0; jindex < p_vertex->num_edges; jindex++)
+        for (size_t jindex = 0; jindex < p_vertex->num_edges; jindex++)
         {
             edge_t *p_edge = p_vertex->p_edges[jindex];
 
@@ -405,6 +415,104 @@ void print_graph(graph_t *p_graph)
         }
         printf("\n");
     }
+}
+
+void graph_dijkstras_search(graph_t *p_graph, const char *p_start)
+{
+    if ((NULL == p_graph) || (NULL == p_start))
+    {
+        return;
+    }
+
+    path_t *p_paths = calloc(p_graph->num_vertices, sizeof(*p_paths));
+
+    if (NULL == p_paths)
+    {
+        return;
+    }
+
+    for (size_t index = 0; index < p_graph->num_vertices; index++)
+    {
+        p_paths[index].p_current = p_graph->pp_vertices[index];
+        p_paths[index].weight = INT_MAX;
+    }
+
+    size_t idx = 0;
+    vertex_t *p_temp = static_find_vertex(p_graph, p_start, &idx);
+    if (NULL == p_temp)
+    {
+        free(p_paths);
+        return;
+    }
+
+    p_paths[idx].weight = 0;
+
+    for (;;)
+    {
+        path_t *p_current = NULL;
+        for (size_t index = 0; index < p_graph->num_vertices; index++)
+        {
+            if ((1 == p_paths[index].visited) || (INT_MAX == p_paths[index].weight))
+            {
+                continue;
+            }
+
+            if ((NULL == p_current) || (p_paths[index].weight < p_current->weight))
+            {
+                p_current = &p_paths[index];
+            }
+        }
+
+        if (NULL == p_current)
+        {
+            break;
+        }
+
+        p_current->visited = 1;
+
+        for (size_t index = 0; index < p_current->p_current->num_edges; index++)
+        {
+            edge_t *p_edge = p_current->p_current->p_edges[index];
+
+            path_t *p_neighbor = &p_paths[p_edge->p_destination->index];
+
+            if (1 == p_neighbor->visited)
+            {
+                continue;
+            }
+
+            int new_weight = p_current->weight + p_edge->weight;
+
+            if (new_weight < p_neighbor->weight)
+            {
+                p_neighbor->weight = new_weight;
+                p_neighbor->previous = p_current;
+            }
+        }
+    }
+
+    for (size_t index = 0; index < p_graph->num_vertices; index++)
+    {
+        if (p_paths[index].weight == INT_MAX)
+        {
+            printf("%s: unreachable\n", p_paths[index].p_current->p_name);
+            continue;
+        }
+
+        printf("path weight: %i, %s", p_paths[index].weight, p_paths[index].p_current->p_name);
+
+        path_t *p_parent = p_paths[index].previous;
+
+        while (NULL != p_parent)
+        {
+            printf(" <- %s", p_parent->p_current->p_name);
+            p_parent = p_parent->previous;
+        }
+
+        printf("\n");
+    }
+
+    free(p_paths);
 }
 
 /* STATIC FUNCTIONS*/
@@ -463,7 +571,7 @@ static int static_resize_graph(graph_t *p_graph)
         return EXIT_FAILURE;
     }
 
-    int new_capacity = p_graph->capacity * 2;
+    size_t new_capacity = p_graph->capacity * 2;
     vertex_t **pp_temp = realloc(p_graph->pp_vertices, new_capacity * sizeof(*pp_temp));
 
     if (NULL == pp_temp)
@@ -471,7 +579,7 @@ static int static_resize_graph(graph_t *p_graph)
         return EXIT_FAILURE;
     }
 
-    for (int index = p_graph->capacity; index < new_capacity; index++)
+    for (size_t index = p_graph->capacity; index < new_capacity; index++)
     {
         pp_temp[index] = NULL;
     }
@@ -496,14 +604,29 @@ static void static_destroy_vertex(vertex_t **pp_vertex)
 
     vertex_t *p_vertex = *pp_vertex;
 
-    for (int index = 0; index < p_vertex->num_edges; index++)
+    for (size_t index = 0; index < p_vertex->num_edges; index++)
     {
-        free(p_vertex->p_edges[index]);
+        if (NULL != p_vertex->p_edges[index])
+        {
+            free(p_vertex->p_edges[index]);
+        }
     }
 
-    free(p_vertex->p_edges);
-    free(p_vertex->p_name);
-    free(p_vertex);
+    if (NULL != p_vertex->p_edges)
+    {
+        free(p_vertex->p_edges);
+    }
+
+    if (NULL != p_vertex->p_name)
+    {
+        free(p_vertex->p_name);
+    }
+
+    if (NULL != p_vertex)
+    {
+        free(p_vertex);
+    }
+
     *pp_vertex = NULL;
 }
 
@@ -518,7 +641,7 @@ static void static_destroy_vertex(vertex_t **pp_vertex)
  *
  * @return Pointer to the matching vertex, or NULL if not found.
  */
-static vertex_t *static_find_vertex(graph_t *p_graph, const char *p_name, int *p_index)
+static vertex_t *static_find_vertex(graph_t *p_graph, const char *p_name, size_t *p_index)
 {
     if ((NULL == p_graph) || (NULL == p_name))
     {
@@ -527,10 +650,10 @@ static vertex_t *static_find_vertex(graph_t *p_graph, const char *p_name, int *p
 
     if (NULL != p_index)
     {
-        *p_index = -1;
+        *p_index = 0;
     }
 
-    for (int position = 0; position < p_graph->num_vertices; position++)
+    for (size_t position = 0; position < p_graph->num_vertices; position++)
     {
         if (0 == strcmp(p_name, p_graph->pp_vertices[position]->p_name))
         {
@@ -590,7 +713,7 @@ static int static_resize_vertex(vertex_t *p_vertex)
         return EXIT_FAILURE;
     }
 
-    int new_capacity = p_vertex->capacity * 2;
+    size_t new_capacity = p_vertex->capacity * 2;
     edge_t **pp_temp = realloc(p_vertex->p_edges, new_capacity * sizeof(*pp_temp));
 
     if (NULL == pp_temp)
@@ -598,7 +721,7 @@ static int static_resize_vertex(vertex_t *p_vertex)
         return EXIT_FAILURE;
     }
 
-    for (int index = p_vertex->capacity; index < new_capacity; index++)
+    for (size_t index = p_vertex->capacity; index < new_capacity; index++)
     {
         pp_temp[index] = NULL;
     }
@@ -622,7 +745,7 @@ static void static_destroy_edges_containing(graph_t *p_graph, const char *p_name
         return;
     }
 
-    for (int index = 0; index < p_graph->num_vertices; index++)
+    for (size_t index = 0; index < p_graph->num_vertices; index++)
     {
         vertex_t *p_vertex = p_graph->pp_vertices[index];
 
@@ -631,7 +754,7 @@ static void static_destroy_edges_containing(graph_t *p_graph, const char *p_name
             continue;
         }
 
-        for (int jindex = 0; jindex < p_vertex->num_edges;)
+        for (size_t jindex = 0; jindex < p_vertex->num_edges;)
         {
             if (0 == strcmp(p_name, p_vertex->p_edges[jindex]->p_destination->p_name))
             {

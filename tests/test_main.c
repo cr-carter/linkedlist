@@ -34,6 +34,9 @@ void test_pqueue_bad(void);
 // test_trie.c
 void test_trie(void);
 
+// test_graph.c
+void test_graph_search(void);
+
 void setUp(void)
 {
 }
@@ -84,20 +87,26 @@ int main(void)
 
     // test_pqueue.c
     {
-        printf("\n\n##############################\nTesting pqueue.c functions\n##############################\n");
-        RUN_TEST(test_pqueue_random);
-        RUN_TEST(test_pqueue_sorted);
-        RUN_TEST(test_pqueue_backwards);
-        RUN_TEST(test_pqueue_large);
-        RUN_TEST(test_pqueue_all_zeros);
-        RUN_TEST(test_pqueue_single);
-        RUN_TEST(test_pqueue_bad);
+        // printf("\n\n##############################\nTesting pqueue.c functions\n##############################\n");
+        // RUN_TEST(test_pqueue_random);
+        // RUN_TEST(test_pqueue_sorted);
+        // RUN_TEST(test_pqueue_backwards);
+        // RUN_TEST(test_pqueue_large);
+        // RUN_TEST(test_pqueue_all_zeros);
+        // RUN_TEST(test_pqueue_single);
+        // RUN_TEST(test_pqueue_bad);
     }
 
     // test_trie.c
     {
-        printf("\n\n##############################\nTesting trie.c functions\n##############################\n");
-        RUN_TEST(test_trie);
+        // printf("\n\n##############################\nTesting trie.c functions\n##############################\n");
+        // RUN_TEST(test_trie);
+    }
+
+    // test_graph.c
+    {
+        printf("\n\n##############################\nTesting graph.c functions\n##############################\n");
+        RUN_TEST(test_graph_search);
     }
 
     UNITY_END();

@@ -2,21 +2,23 @@
 #ifndef GRAPH_H
 #define GRAPH_H
 
-typedef graph_t;
+#include <stdlib.h>
+
+typedef struct graph graph_t;
 
 /**
  * @brief Creates and initializes an empty graph.
  *
  * @return Pointer to the newly created graph, or NULL on allocation failure.
  */
-graph_t *create_graph();
+graph_t *graph_create_graph();
 
 /**
  * @brief Frees all memory associated with a graph.
  *
  * @param[in,out] p_graph Pointer to the graph pointer. Set to NULL after destruction.
  */
-void destroy_graph(graph_t **p_graph);
+void graph_destroy_graph(graph_t **p_graph);
 
 /**
  * @brief Adds a new vertex to the graph.
@@ -26,7 +28,7 @@ void destroy_graph(graph_t **p_graph);
  *
  * @return EXIT_SUCCESS on success, otherwise EXIT_FAILURE.
  */
-int add_vertex(graph_t *p_graph, const char *p_name);
+int graph_add_vertex(graph_t *p_graph, const char *p_name);
 
 /**
  * @brief Removes a vertex and all edges referencing it.
@@ -36,7 +38,7 @@ int add_vertex(graph_t *p_graph, const char *p_name);
  *
  * @return EXIT_SUCCESS on success, otherwise EXIT_FAILURE.
  */
-int remove_vertex(graph_t *p_graph, const char *p_name);
+int graph_remove_vertex(graph_t *p_graph, const char *p_name);
 
 /**
  * @brief Renames an existing vertex.
@@ -47,7 +49,7 @@ int remove_vertex(graph_t *p_graph, const char *p_name);
  *
  * @return EXIT_SUCCESS on success, otherwise EXIT_FAILURE.
  */
-int rename_vertex(graph_t *p_graph, const char *p_current_name, const char *p_new_name);
+int graph_rename_vertex(graph_t *p_graph, const char *p_current_name, const char *p_new_name);
 
 /**
  * @brief Retrieves the names of all neighboring vertices.
@@ -62,7 +64,7 @@ int rename_vertex(graph_t *p_graph, const char *p_current_name, const char *p_ne
  * @return Dynamically allocated array of neighbor names, or NULL if none exist
  *         or an error occurs.
  */
-const char **get_neighbors(graph_t *p_graph, const char *p_name, int *p_count);
+const char **graph_get_neighbors(graph_t *p_graph, const char *p_name, size_t *p_count);
 
 /**
  * @brief Adds a directed weighted edge between two vertices.
@@ -74,7 +76,7 @@ const char **get_neighbors(graph_t *p_graph, const char *p_name, int *p_count);
  *
  * @return EXIT_SUCCESS on success, otherwise EXIT_FAILURE.
  */
-int add_edge(graph_t *p_graph, const char *p_from, const char *p_to, int weight);
+int graph_add_edge(graph_t *p_graph, const char *p_from, const char *p_to, int weight);
 
 /**
  * @brief Removes a directed edge matching the destination and weight.
@@ -86,7 +88,7 @@ int add_edge(graph_t *p_graph, const char *p_from, const char *p_to, int weight)
  *
  * @return EXIT_SUCCESS on success, otherwise EXIT_FAILURE.
  */
-int remove_edge(graph_t *p_graph, const char *p_from, const char *p_to, int weight);
+int graph_remove_edge(graph_t *p_graph, const char *p_from, const char *p_to, int weight);
 
 /**
  * @brief Retrieves all edge weights between two vertices.
@@ -101,7 +103,7 @@ int remove_edge(graph_t *p_graph, const char *p_from, const char *p_to, int weig
  * @return Dynamically allocated array of weights, or NULL if no matching edges
  *         exist or an error occurs.
  */
-int *get_edge_weight(graph_t *p_graph, const char *p_from, const char *p_to, int *p_count);
+int *graph_get_edge_weight(graph_t *p_graph, const char *p_from, const char *p_to, int *p_count);
 
 /**
  * @brief Changes the weight of a matching edge.
@@ -114,14 +116,16 @@ int *get_edge_weight(graph_t *p_graph, const char *p_from, const char *p_to, int
  *
  * @return EXIT_SUCCESS on success, otherwise EXIT_FAILURE.
  */
-int set_edge_value(graph_t *p_graph, const char *p_from, const char *p_to, int old_weight, int new_weight);
+int graph_set_edge_value(graph_t *p_graph, const char *p_from, const char *p_to, int old_weight, int new_weight);
 
 /**
  * @brief Prints the graph as an adjacency list.
  *
  * @param[in] p_graph Graph to print.
  */
-void print_graph(graph_t *p_graph);
+void graph_print_graph(graph_t *p_graph);
+
+void graph_dijkstras_search(graph_t *p_graph, const char *p_start);
 
 #endif // GRAPH_H
 
