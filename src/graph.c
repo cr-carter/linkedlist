@@ -29,13 +29,14 @@ struct vertex
     size_t index;
     size_t capacity;
     char *p_name;
+    void *p_data;
     edge_t **p_edges;
 };
 
 struct edge
 {
     vertex_t *p_destination;
-    int weight;
+    size_t weight;
 };
 
 struct graph
@@ -43,11 +44,12 @@ struct graph
     size_t num_vertices;
     size_t capacity;
     vertex_t **pp_vertices;
+    free_data_fn free_data;
 };
 
 struct path
 {
-    int weight;
+    size_t weight;
     int visited;
     vertex_t *p_current;
     path_t *previous;
@@ -62,13 +64,17 @@ static void static_destroy_vertex(vertex_t **pp_vertex);
 static vertex_t *static_find_vertex(graph_t *p_graph, const char *p_name, size_t *p_index);
 
 /* Helpers for edge management */
-static edge_t *static_create_edge(vertex_t *p_destination, int weight);
+static edge_t *static_create_edge(vertex_t *p_destination, size_t weight);
 static int static_resize_vertex(vertex_t *p_vertex);
 static void static_destroy_edges_containing(graph_t *p_graph, const char *p_name);
 
+/* Helpers for dijkstra and a* search */
+path_t *static_get_paths(graph_t *p_graph, size_t start_index);
+search_results_t *static_get_dijkstras_results(path_t *p_answer);
+
 /* PUBLIC FUNCTIONS */
 
-graph_t *graph_create_graph()
+graph_t *graph_create_graph(free_data_fn free_data)
 {
     graph_t *p_graph = calloc(1, sizeof(*p_graph));
 
@@ -86,8 +92,19 @@ graph_t *graph_create_graph()
     }
 
     p_graph->capacity = INIT_VERTICES_COUNT;
+    p_graph->free_data = free_data;
 
     return p_graph;
+}
+
+void graph_update_free_data(graph_t *p_graph, free_data_fn free_data)
+{
+    if (NULL == p_graph)
+    {
+        return;
+    }
+
+    p_graph->free_data = free_data;
 }
 
 void graph_destroy_graph(graph_t **p_graph)
@@ -97,9 +114,9 @@ void graph_destroy_graph(graph_t **p_graph)
         return;
     }
 
-    for (size_t index = 0; index < (*p_graph)->num_vertices; index++)
+    for (; (*p_graph)->num_vertices > 0;)
     {
-        static_destroy_vertex(&(*p_graph)->pp_vertices[index]);
+        graph_remove_vertex(*p_graph, (*p_graph)->pp_vertices[0]->p_name);
     }
 
     free((*p_graph)->pp_vertices);
@@ -107,7 +124,7 @@ void graph_destroy_graph(graph_t **p_graph)
     *p_graph = NULL;
 }
 
-int graph_add_vertex(graph_t *p_graph, const char *p_name)
+int graph_add_vertex(graph_t *p_graph, const char *p_name, const void *p_data, size_t data_size)
 {
     if ((NULL == p_graph) || (NULL == p_name))
     {
@@ -134,6 +151,19 @@ int graph_add_vertex(graph_t *p_graph, const char *p_name)
     if (NULL == p_new_vertex)
     {
         return EXIT_FAILURE;
+    }
+
+    if ((NULL != p_data) && (data_size > 0))
+    {
+        p_new_vertex->p_data = calloc(1, data_size);
+
+        if (NULL == p_new_vertex->p_data)
+        {
+            static_destroy_vertex(&p_new_vertex);
+            return EXIT_FAILURE;
+        }
+
+        memcpy(p_new_vertex->p_data, p_data, data_size);
     }
 
     p_new_vertex->index = p_graph->num_vertices;
@@ -172,6 +202,11 @@ int graph_remove_vertex(graph_t *p_graph, const char *p_name)
 
     p_graph->pp_vertices[last] = NULL;
     p_graph->num_vertices -= 1;
+
+    if ((NULL != p_graph->free_data) && (NULL != p_vertex->p_data))
+    {
+        p_graph->free_data(p_vertex->p_data);
+    }
 
     static_destroy_vertex(&p_vertex);
 
@@ -238,6 +273,11 @@ const char **graph_get_neighbors(graph_t *p_graph, const char *p_name, size_t *p
 
     const char **pp_neighbors = calloc(p_vertex->num_edges, sizeof(*pp_neighbors));
 
+    if (NULL == pp_neighbors)
+    {
+        return NULL;
+    }
+
     for (size_t index = 0; index < p_vertex->num_edges; index++)
     {
         pp_neighbors[index] = p_vertex->p_edges[index]->p_destination->p_name;
@@ -246,7 +286,7 @@ const char **graph_get_neighbors(graph_t *p_graph, const char *p_name, size_t *p
     return pp_neighbors;
 }
 
-int graph_add_edge(graph_t *p_graph, const char *p_from, const char *p_to, int weight)
+int graph_add_edge(graph_t *p_graph, const char *p_from, const char *p_to, size_t weight)
 {
     if ((NULL == p_graph) || (NULL == p_from) || (NULL == p_to))
     {
@@ -290,7 +330,7 @@ int graph_add_edge(graph_t *p_graph, const char *p_from, const char *p_to, int w
     return EXIT_SUCCESS;
 }
 
-int graph_remove_edge(graph_t *p_graph, const char *p_from, const char *p_to, int weight)
+int graph_remove_edge(graph_t *p_graph, const char *p_from, const char *p_to, size_t weight)
 {
 
     if ((NULL == p_graph) || (NULL == p_from) || (NULL == p_to))
@@ -327,7 +367,7 @@ int graph_remove_edge(graph_t *p_graph, const char *p_from, const char *p_to, in
     return EXIT_FAILURE;
 }
 
-int *graph_get_edge_weight(graph_t *p_graph, const char *p_from, const char *p_to, int *p_count)
+size_t *graph_get_edge_weight(graph_t *p_graph, const char *p_from, const char *p_to, int *p_count)
 {
     if ((NULL == p_graph) || (NULL == p_from) || (NULL == p_to) || (NULL == p_count))
     {
@@ -343,7 +383,12 @@ int *graph_get_edge_weight(graph_t *p_graph, const char *p_from, const char *p_t
 
     edge_t **p_edges = p_vertex->p_edges;
 
-    int *p_weights = calloc(p_vertex->num_edges, sizeof(*p_weights));
+    size_t *p_weights = calloc(p_vertex->num_edges, sizeof(*p_weights));
+
+    if (NULL == p_weights)
+    {
+        return NULL;
+    }
 
     *p_count = 0;
 
@@ -365,7 +410,7 @@ int *graph_get_edge_weight(graph_t *p_graph, const char *p_from, const char *p_t
     return p_weights;
 }
 
-int graph_set_edge_value(graph_t *p_graph, const char *p_from, const char *p_to, int old_weight, int new_weight)
+int graph_set_edge_value(graph_t *p_graph, const char *p_from, const char *p_to, size_t old_weight, size_t new_weight)
 {
     if ((NULL == p_graph) || (NULL == p_from) || (NULL == p_to))
     {
@@ -417,13 +462,13 @@ void graph_print_graph(graph_t *p_graph)
         {
             edge_t *p_edge = p_vertex->p_edges[jindex];
 
-            printf("-> %s, %i ", p_edge->p_destination->p_name, p_edge->weight);
+            printf("-> %s, %zu ", p_edge->p_destination->p_name, p_edge->weight);
         }
         printf("\n");
     }
 }
 
-djikstra_results_t *graph_djikstras_search(graph_t *p_graph, const char *p_start, const char *p_end)
+search_results_t *graph_dijkstras_search(graph_t *p_graph, const char *p_start, const char *p_end)
 {
     if ((NULL == p_graph) || (NULL == p_start) || (NULL == p_end))
     {
@@ -439,18 +484,61 @@ djikstra_results_t *graph_djikstras_search(graph_t *p_graph, const char *p_start
     }
 
     size_t end_index = 0;
-    if (NULL != p_end)
-    {
-        vertex_t *p_end_vertex = static_find_vertex(p_graph, p_end, &end_index);
+    vertex_t *p_end_vertex = static_find_vertex(p_graph, p_end, &end_index);
 
-        if (NULL == p_end_vertex)
-        {
-            return NULL;
-        }
+    if (NULL == p_end_vertex)
+    {
+        return NULL;
+    }
+
+    path_t *p_paths = static_get_paths(p_graph, idx);
+
+    if (NULL == p_paths)
+    {
+        return NULL;
+    }
+
+    if (ULONG_MAX == p_paths[end_index].weight)
+    {
+        free(p_paths);
+        return NULL;
+    }
+
+    search_results_t *p_results = static_get_dijkstras_results(&p_paths[end_index]);
+
+    if (NULL == p_results)
+    {
+        free(p_paths);
+        return NULL;
+    }
+
+    free(p_paths);
+
+    return p_results;
+}
+
+search_results_t *graph_a_star_search(graph_t *p_graph, const char *p_start, const char *p_end, heuristic_fn h_func)
+{
+    if ((NULL == p_graph) || (NULL == p_start) || (NULL == p_end) || (NULL == h_func))
+    {
+        return NULL;
+    }
+
+    size_t idx = 0;
+    vertex_t *p_start_vertex = static_find_vertex(p_graph, p_start, &idx);
+    if (NULL == p_start_vertex)
+    {
+        return NULL;
+    }
+
+    size_t end_index = 0;
+    vertex_t *p_end_vertex = static_find_vertex(p_graph, p_end, &end_index);
+    if (NULL == p_end_vertex)
+    {
+        return NULL;
     }
 
     path_t *p_paths = calloc(p_graph->num_vertices, sizeof(*p_paths));
-
     if (NULL == p_paths)
     {
         return NULL;
@@ -459,7 +547,7 @@ djikstra_results_t *graph_djikstras_search(graph_t *p_graph, const char *p_start
     for (size_t index = 0; index < p_graph->num_vertices; index++)
     {
         p_paths[index].p_current = p_graph->pp_vertices[index];
-        p_paths[index].weight = INT_MAX;
+        p_paths[index].weight = ULONG_MAX;
     }
 
     p_paths[idx].weight = 0;
@@ -467,20 +555,31 @@ djikstra_results_t *graph_djikstras_search(graph_t *p_graph, const char *p_start
     for (;;)
     {
         path_t *p_current = NULL;
+        size_t best_priority = ULONG_MAX;
 
+        // find unvisited node with lowest f(n) = g(n) + h(n)
         for (size_t index = 0; index < p_graph->num_vertices; index++)
         {
-            if ((1 == p_paths[index].visited) || (INT_MAX == p_paths[index].weight))
+            if ((1 == p_paths[index].visited) || (ULONG_MAX == p_paths[index].weight))
             {
                 continue;
             }
 
-            if ((NULL == p_current) || (p_paths[index].weight < p_current->weight))
+            size_t current_priority = 0;
+            if ((NULL != p_paths[index].p_current->p_data) && (NULL != p_end_vertex->p_data))
+            {
+                current_priority =
+                    p_paths[index].weight + h_func(p_paths[index].p_current->p_data, p_end_vertex->p_data);
+            }
+
+            if ((NULL == p_current) || (current_priority < best_priority))
             {
                 p_current = &p_paths[index];
+                best_priority = current_priority;
             }
         }
 
+        // no nodes left to check
         if (NULL == p_current)
         {
             break;
@@ -488,6 +587,13 @@ djikstra_results_t *graph_djikstras_search(graph_t *p_graph, const char *p_start
 
         p_current->visited = 1;
 
+        // goal found
+        if (0 == strcmp(p_current->p_current->p_name, p_end))
+        {
+            break;
+        }
+
+        // check outgoing edges
         for (size_t index = 0; index < p_current->p_current->num_edges; index++)
         {
             edge_t *p_edge = p_current->p_current->p_edges[index];
@@ -502,7 +608,7 @@ djikstra_results_t *graph_djikstras_search(graph_t *p_graph, const char *p_start
                 continue;
             }
 
-            int new_weight = p_current->weight + p_edge->weight;
+            size_t new_weight = p_current->weight + p_edge->weight;
 
             if (new_weight < p_neighbor->weight)
             {
@@ -512,62 +618,20 @@ djikstra_results_t *graph_djikstras_search(graph_t *p_graph, const char *p_start
         }
     }
 
-    if (INT_MAX == p_paths[end_index].weight)
+    if (ULONG_MAX == p_paths[end_index].weight)
     {
         free(p_paths);
         return NULL;
     }
 
-    djikstra_results_t *p_results = calloc(1, sizeof(*p_results));
-
-    if (NULL == p_results)
-    {
-        free(p_paths);
-        return NULL;
-    }
-
-    p_results->weight = p_paths[end_index].weight;
-
-    size_t node_count = 0;
-    path_t *p_current = &p_paths[end_index];
-
-    for (path_t *p_temp = p_current; NULL != p_temp; p_temp = p_temp->previous)
-    {
-        node_count++;
-    }
-
-    if (0 == node_count)
-    {
-        free(p_results);
-        free(p_paths);
-        return NULL;
-    }
-
-    p_results->pp_nodes = calloc(node_count, sizeof(*p_results->pp_nodes));
-
-    if (NULL == p_results->pp_nodes)
-    {
-        free(p_results);
-        free(p_paths);
-        return NULL;
-    }
-
-    p_results->node_count = node_count;
-
-    p_current = &p_paths[end_index];
-
-    for (size_t index = node_count; index > 0; index--)
-    {
-        p_results->pp_nodes[index - 1] = strdup(p_current->p_current->p_name);
-        p_current = p_current->previous;
-    }
+    search_results_t *p_results = static_get_dijkstras_results(&p_paths[end_index]);
 
     free(p_paths);
 
     return p_results;
 }
 
-void graph_djikstras_print_all(graph_t *p_graph, const char *p_start)
+void graph_dijkstras_print_all(graph_t *p_graph, const char *p_start)
 {
     if ((NULL == p_graph) || (NULL == p_start))
     {
@@ -582,7 +646,7 @@ void graph_djikstras_print_all(graph_t *p_graph, const char *p_start)
         return;
     }
 
-    path_t *p_paths = calloc(p_graph->num_vertices, sizeof(*p_paths));
+    path_t *p_paths = static_get_paths(p_graph, idx);
 
     if (NULL == p_paths)
     {
@@ -591,65 +655,13 @@ void graph_djikstras_print_all(graph_t *p_graph, const char *p_start)
 
     for (size_t index = 0; index < p_graph->num_vertices; index++)
     {
-        p_paths[index].p_current = p_graph->pp_vertices[index];
-        p_paths[index].weight = INT_MAX;
-    }
-
-    p_paths[idx].weight = 0;
-
-    for (;;)
-    {
-        path_t *p_current = NULL;
-        for (size_t index = 0; index < p_graph->num_vertices; index++)
-        {
-            if ((1 == p_paths[index].visited) || (INT_MAX == p_paths[index].weight))
-            {
-                continue;
-            }
-
-            if ((NULL == p_current) || (p_paths[index].weight < p_current->weight))
-            {
-                p_current = &p_paths[index];
-            }
-        }
-
-        if (NULL == p_current)
-        {
-            break;
-        }
-
-        p_current->visited = 1;
-
-        for (size_t index = 0; index < p_current->p_current->num_edges; index++)
-        {
-            edge_t *p_edge = p_current->p_current->p_edges[index];
-
-            path_t *p_neighbor = &p_paths[p_edge->p_destination->index];
-
-            if (1 == p_neighbor->visited)
-            {
-                continue;
-            }
-
-            int new_weight = p_current->weight + p_edge->weight;
-
-            if (new_weight < p_neighbor->weight)
-            {
-                p_neighbor->weight = new_weight;
-                p_neighbor->previous = p_current;
-            }
-        }
-    }
-
-    for (size_t index = 0; index < p_graph->num_vertices; index++)
-    {
-        if (p_paths[index].weight == INT_MAX)
+        if (p_paths[index].weight == ULONG_MAX)
         {
             printf("%s: unreachable\n", p_paths[index].p_current->p_name);
             continue;
         }
 
-        printf("path weight: %i, %s", p_paths[index].weight, p_paths[index].p_current->p_name);
+        printf("path weight: %zu, %s", p_paths[index].weight, p_paths[index].p_current->p_name);
 
         path_t *p_parent = p_paths[index].previous;
 
@@ -663,6 +675,32 @@ void graph_djikstras_print_all(graph_t *p_graph, const char *p_start)
     }
 
     free(p_paths);
+}
+
+void graph_free_results(search_results_t **pp_results)
+{
+    if ((NULL == pp_results) || (NULL == *pp_results))
+    {
+        return;
+    }
+
+    for (size_t index = 0; index < (*pp_results)->node_count; index++)
+    {
+        if (NULL == (*pp_results)->pp_nodes[index])
+        {
+            continue;
+        }
+
+        free((*pp_results)->pp_nodes[index]);
+    }
+
+    if (NULL != (*pp_results)->pp_nodes)
+    {
+        free((*pp_results)->pp_nodes);
+    }
+
+    free(*pp_results);
+    *pp_results = NULL;
 }
 
 /* STATIC FUNCTIONS*/
@@ -829,7 +867,7 @@ static vertex_t *static_find_vertex(graph_t *p_graph, const char *p_name, size_t
  *
  * @return Pointer to the new edge, or NULL on allocation failure.
  */
-static edge_t *static_create_edge(vertex_t *p_destination, int weight)
+static edge_t *static_create_edge(vertex_t *p_destination, size_t weight)
 {
     if (NULL == p_destination)
     {
@@ -906,7 +944,8 @@ static void static_destroy_edges_containing(graph_t *p_graph, const char *p_name
 
         for (size_t jindex = 0; jindex < p_vertex->num_edges;)
         {
-            if (0 == strcmp(p_name, p_vertex->p_edges[jindex]->p_destination->p_name))
+            if ((NULL != p_vertex->p_edges[jindex]) &&
+                (0 == strcmp(p_name, p_vertex->p_edges[jindex]->p_destination->p_name)))
             {
                 free(p_vertex->p_edges[jindex]);
                 p_vertex->num_edges -= 1;
@@ -920,6 +959,141 @@ static void static_destroy_edges_containing(graph_t *p_graph, const char *p_name
             }
         }
     }
+}
+
+/**
+ * @brief Computes shortest paths from a start vertex index to all other reachable vertices.
+ *
+ * @param[in] p_graph Graph instance.
+ * @param[in] start_index Index of the starting vertex.
+ *
+ * @return Dynamically allocated path array representing short paths, or NULL on failure.
+ */
+path_t *static_get_paths(graph_t *p_graph, size_t start_index)
+{
+    if (NULL == p_graph)
+    {
+        return NULL;
+    }
+
+    path_t *p_paths = calloc(p_graph->num_vertices, sizeof(*p_paths));
+
+    if (NULL == p_paths)
+    {
+        return NULL;
+    }
+
+    for (size_t index = 0; index < p_graph->num_vertices; index++)
+    {
+        p_paths[index].p_current = p_graph->pp_vertices[index];
+        p_paths[index].weight = ULONG_MAX;
+    }
+
+    p_paths[start_index].weight = 0;
+
+    for (;;)
+    {
+        path_t *p_current = NULL;
+
+        for (size_t index = 0; index < p_graph->num_vertices; index++)
+        {
+            if ((1 == p_paths[index].visited) || (ULONG_MAX == p_paths[index].weight))
+            {
+                continue;
+            }
+
+            if ((NULL == p_current) || (p_paths[index].weight < p_current->weight))
+            {
+                p_current = &p_paths[index];
+            }
+        }
+
+        if (NULL == p_current)
+        {
+            break;
+        }
+
+        p_current->visited = 1;
+
+        for (size_t index = 0; index < p_current->p_current->num_edges; index++)
+        {
+            edge_t *p_edge = p_current->p_current->p_edges[index];
+
+            assert(NULL != p_edge);
+            assert(NULL != p_edge->p_destination);
+            assert(p_edge->p_destination->index < p_graph->num_vertices);
+
+            path_t *p_neighbor = &p_paths[p_edge->p_destination->index];
+
+            if (1 == p_neighbor->visited)
+            {
+                continue;
+            }
+
+            size_t new_weight = p_current->weight + p_edge->weight;
+
+            if (new_weight < p_neighbor->weight)
+            {
+                p_neighbor->weight = new_weight;
+                p_neighbor->previous = p_current;
+            }
+        }
+    }
+
+    return p_paths;
+}
+
+/**
+ * @brief Constructs a Dijkstra result structure from a terminal path node node chain.
+ *
+ * @param[in] p_answer Pointer to the target destination path node.
+ *
+ * @return Dynamically allocated results structure, or NULL on failure.
+ */
+search_results_t *static_get_dijkstras_results(path_t *p_answer)
+{
+    search_results_t *p_results = calloc(1, sizeof(*p_results));
+
+    if (NULL == p_results)
+    {
+        return NULL;
+    }
+
+    p_results->weight = p_answer->weight;
+
+    size_t node_count = 0;
+    path_t *p_current = p_answer;
+
+    for (path_t *p_temp = p_current; NULL != p_temp; p_temp = p_temp->previous)
+    {
+        node_count++;
+    }
+
+    if (0 == node_count)
+    {
+        free(p_results);
+        return NULL;
+    }
+
+    p_results->pp_nodes = calloc(node_count, sizeof(*p_results->pp_nodes));
+
+    if (NULL == p_results->pp_nodes)
+    {
+        free(p_results);
+        return NULL;
+    }
+
+    p_results->node_count = node_count;
+
+    p_current = p_answer;
+
+    for (size_t index = node_count; index > 0; index--)
+    {
+        p_results->pp_nodes[index - 1] = strdup(p_current->p_current->p_name);
+        p_current = p_current->previous;
+    }
+
+    return p_results;
 }
 
 /* end of file graph.c*/
